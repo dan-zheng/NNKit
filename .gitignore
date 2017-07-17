@@ -1,0 +1,73 @@
+.DS_Store
+/.build
+/Packages
+/Build
+/build
+
+# Xcode projects
+*.xcodeproj
+*.xcworkspace
+
+# Swift package pins
+Package.pins
+
+# AppCode
+.idea/
+
+*.o
+*.d
+*.dylib
+*.swiftmodule
+*.framework
+*.xctest
+.#*
+
+## Various Xcode files
+*.pbxuser
+!default.pbxuser
+*.mode1v3
+!default.mode1v3
+*.mode2v3
+!default.mode2v3
+*.perspectivev3
+!default.perspectivev3
+xcuserdata/
+
+## Other
+*.moved-aside
+*.xcuserstate
+
+## Obj-C/Swift specific
+*.hmap
+*.ipa
+
+.DS_Store
+
+## Various JetBrains files
+# User-specific stuff:
+.idea/workspace.xml
+.idea/tasks.xml
+
+# Sensitive or high-churn files:
+.idea/dataSources/
+.idea/dataSources.ids
+.idea/dataSources.xml
+.idea/dataSources.local.xml
+.idea/sqlDataSources.xml
+.idea/dynamic.xml
+.idea/uiDesigner.xml
+
+# Gradle:
+.idea/gradle.xml
+.idea/libraries
+
+# Mongo Explorer plugin:
+.idea/mongoSettings.xml
+
+## File-based project format:
+*.iws
+
+# LaTeX/Org stuff
+Documentation/**/auto/
+*.pdf
+*.resolved
