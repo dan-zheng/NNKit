@@ -5,9 +5,6 @@ extension Int : Primitive {}
 extension Float : Primitive {}
 extension String : Primitive {}
 
-protocol ArrayType {}
-extension Array where Element : Primitive {}
-
 enum ArithmeticOperator {
     case add, subtract, multiply, divide, modulo
 }
@@ -36,6 +33,7 @@ indirect enum Expression {
     case reduce(Expression, Expression, Expression)
     case lambda([AnyHashable], Expression)
     case apply(Expression, [Expression])
+    case lambda2((Expression) -> Expression)
 }
 
 enum EvaluationError : Error {
@@ -167,6 +165,8 @@ extension Expression {
                 throw EvaluationError.typeError
             }
             return s.reduce(a, { f([$0, $1]) })
+        case let .lambda2(f):
+            return f
         }
     }
 }
@@ -176,10 +176,6 @@ struct Rep<T> {
     init(_ expression: Expression) {
         self.expression = expression
     }
-}
-
-protocol Functions {
-    
 }
 
 extension Rep where T : Numeric {
@@ -425,8 +421,37 @@ func fac(_ x: Rep<Int>) -> Rep<Int> {
 // fac(0)
 
 // Bug: lack of safety regarding Rep<[T]>, solvable using conditional conformance?
-/*
-let array2: Rep<[Float]> = [1, 2]
-array2.evaluated()
-*/
 
+/// New tests
+
+protocol Def {
+    associatedtype Result
+}
+
+struct LambdaExp<A, B> : Def {
+    typealias Result = (A) -> B
+    var closure: (Rep<A>) -> Rep<B>
+}
+
+func factorial(_ x: Rep<Int>) -> Rep<Int> {
+    // it's necessary to unstage the Rep<Bool> here
+    if ((x == 1).evaluated()) {
+        return 1
+    } else {
+        return x * factorial(x - 1)
+    }
+}
+
+let facExp = LambdaExp(closure: factorial)
+facExp.closure(6)
+facExp.closure(6).evaluated()
+
+func convoluted(_ x: Rep<Int>) {
+    func f(_ y: Rep<Int>) {
+        return convoluted(y)
+    }
+    let g = f
+    g(x)
+}
+
+// convoluted(1)
