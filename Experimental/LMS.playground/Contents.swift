@@ -91,7 +91,6 @@ enum BooleanOperator {
 
 class BinaryExpression<Operator, Operand, Result> : Expression<Result> {
     typealias Combiner = (Operand, Operand) -> Result
-    typealias LazyCombiner = (Operand, @autoclosure () throws -> Operand) throws -> Result
 
     var `operator`: Operator
     var left: Expression<Operand>
@@ -138,12 +137,10 @@ class ComparisonExpression<Operand : Comparable>
 class BooleanExpression : BinaryExpression<BooleanOperator, Bool, Bool> {
     override func evaluated(in env: Environment) -> Bool {
         let lhs = left.evaluated(in: env), rhs = right.evaluated(in: env)
-        let op: LazyCombiner
         switch `operator` {
-        case .and: op = (&&)
-        case .or: op = (||)
+        case .and: return lhs && rhs
+        case .or: return lhs || rhs
         }
-        return try! op(lhs, rhs)
     }
 }
 
