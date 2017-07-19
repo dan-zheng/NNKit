@@ -15,11 +15,17 @@ class Environment {
     }
 
     func value<T>(for symbol: Int) -> T? {
-        return stack.lazy.reversed().flatMap { $0[symbol] as? T }.first
+        for tab in stack.reversed() {
+            guard let val = tab[symbol] as? T else {
+                continue
+            }
+            return val
+        }
+        return nil
     }
 
     func insert<T>(_ value: T, for symbol: Int) {
-        stack[stack.endIndex][symbol] = value
+        stack[stack.endIndex - 1][symbol] = value
     }
 
     func makeSymbol() -> Int {
@@ -39,8 +45,12 @@ class Expression<Result> : Staged {
     }
 }
 
-struct Rep<T> {
-    var expression: Expression<T>
+struct Rep<Result> {
+    var expression: Expression<Result>
+
+    init(_ expression: Expression<Result>) {
+        self.expression = expression
+    }
 }
 
 //: ## Atomic Expressions
@@ -159,8 +169,9 @@ class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return> {
         return { arg in
             env.enterScope()
             env.insert(arg, for: sym)
-            defer { env.exitScope() }
-            return body.evaluated(in: env)
+            let val = body.evaluated(in: env)
+            env.exitScope()
+            return val
         }
     }
 }
@@ -181,3 +192,147 @@ class ApplyExpression<Argument, Return> : Expression<Return> {
         return cloVal(argVal)
     }
 }
+
+class IfExpression<Result> : Expression<Result> {
+    var condition: Expression<Bool>
+    var then: Expression<Result>
+    var `else`: Expression<Result>
+
+    init(condition: Expression<Bool>,
+         then: Expression<Result>, else: Expression<Result>) {
+        self.condition = condition
+        self.then = then
+        self.`else` = `else`
+    }
+
+    override func evaluated(in env: Environment) -> Result {
+        let condVal = condition.evaluated(in: env)
+        return condVal ? then.evaluated(in: env) : `else`.evaluated(in: env)
+    }
+}
+
+//: ## DSL
+
+extension Rep {
+    func evaluated() -> Result {
+        return expression.evaluated(in: Environment())
+    }
+}
+
+func int(_ value: Int) -> Rep<Int> {
+    return Rep(ConstantExpression(value: value))
+}
+
+func float(_ value: Float) -> Rep<Float> {
+    return Rep(ConstantExpression(value: value))
+}
+
+func bool(_ value: Bool) -> Rep<Bool> {
+    return Rep(ConstantExpression(value: value))
+}
+
+extension Rep where Result : Numeric {
+    static func + (lhs: Rep, rhs: Rep) -> Rep {
+        return Rep(ArithmeticExpression(operator: .add,
+                                        left: lhs.expression,
+                                        right: rhs.expression))
+    }
+
+    static func - (lhs: Rep, rhs: Rep) -> Rep {
+        return Rep(ArithmeticExpression(operator: .subtract,
+                                        left: lhs.expression,
+                                        right: rhs.expression))
+    }
+
+    static func * (lhs: Rep, rhs: Rep) -> Rep {
+        return Rep(ArithmeticExpression(operator: .multiply,
+                                        left: lhs.expression,
+                                        right: rhs.expression))
+    }
+}
+
+extension Rep where Result : Comparable {
+    static func > (lhs: Rep, rhs: Rep) -> Rep<Bool> {
+        return Rep<Bool>(ComparisonExpression(operator: .greaterThan,
+                                              left: lhs.expression,
+                                              right: rhs.expression))
+    }
+
+    static func >= (lhs: Rep, rhs: Rep) -> Rep<Bool> {
+        return Rep<Bool>(ComparisonExpression(operator: .greaterThanOrEqual,
+                                              left: lhs.expression,
+                                              right: rhs.expression))
+    }
+
+    static func < (lhs: Rep, rhs: Rep) -> Rep<Bool> {
+        return Rep<Bool>(ComparisonExpression(operator: .lessThan,
+                                              left: lhs.expression,
+                                              right: rhs.expression))
+    }
+
+    static func <= (lhs: Rep, rhs: Rep) -> Rep<Bool> {
+        return Rep<Bool>(ComparisonExpression(operator: .lessThanOrEqual,
+                                              left: lhs.expression,
+                                              right: rhs.expression))
+    }
+
+    static func == (lhs: Rep, rhs: Rep) -> Rep<Bool> {
+        return Rep<Bool>(ComparisonExpression(operator: .equal,
+                                              left: lhs.expression,
+                                              right: rhs.expression))
+    }
+
+    static func != (lhs: Rep, rhs: Rep) -> Rep<Bool> {
+        return Rep<Bool>(ComparisonExpression(operator: .notEqual,
+                                              left: lhs.expression,
+                                              right: rhs.expression))
+    }
+}
+
+extension Rep where Result == Bool {
+    static func && (lhs: Rep, rhs: Rep) -> Rep {
+        return Rep(BooleanExpression(operator: .and,
+                                     left: lhs.expression,
+                                     right: rhs.expression))
+    }
+
+    static func || (lhs: Rep, rhs: Rep) -> Rep {
+        return Rep(BooleanExpression(operator: .or,
+                                     left: lhs.expression,
+                                     right: rhs.expression))
+    }
+}
+
+func lambda<Argument, Result>(_ closure: @escaping (Rep<Argument>) -> Rep<Result>)
+    -> Rep<(Argument) -> Result> {
+    return Rep(LambdaExpression { closure(Rep($0)).expression })
+}
+
+extension Rep {
+    subscript<Argument, ClosureResult>(_ arg: Rep<Argument>) -> Rep<ClosureResult>
+        where Result == (Argument) -> ClosureResult {
+        return Rep<ClosureResult>(
+            ApplyExpression<Argument, ClosureResult>(closure: expression,
+                                                     argument: arg.expression))
+    }
+}
+
+func `if`<Result>(_ condition: Rep<Bool>, then: Rep<Result>, else: Rep<Result>) -> Rep<Result> {
+    return Rep(IfExpression(condition: condition.expression,
+                            then: then.expression, else: `else`.expression))
+}
+
+let x = float(10)
+let y = float(20)
+(x + y).evaluated()
+
+let addTen = lambda { x in
+    x + float(10)
+}
+addTen.evaluated()(10)
+
+let round = lambda { x in
+    `if`(x >= float(0.5), then: float(1), else: float(0))
+}
+round[float(0.3)].evaluated()
+round[float(0.73)].evaluated()
