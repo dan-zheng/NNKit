@@ -209,15 +209,17 @@ extension Rep {
     }
 }
 
-func int(_ value: Int) -> Rep<Int> {
+prefix operator ^
+
+prefix func ^(_ value: Int) -> Rep<Int> {
     return Rep(ConstantExpression(value: value))
 }
 
-func float(_ value: Float) -> Rep<Float> {
+prefix func ^(_ value: Float) -> Rep<Float> {
     return Rep(ConstantExpression(value: value))
 }
 
-func bool(_ value: Bool) -> Rep<Bool> {
+prefix func ^(_ value: Bool) -> Rep<Bool> {
     return Rep(ConstantExpression(value: value))
 }
 
@@ -293,7 +295,7 @@ extension Rep where Result == Bool {
     }
 }
 
-func lambda<Argument, Result>(_ closure: @escaping (Rep<Argument>) -> Rep<Result>)
+prefix func ^<Argument, Result>(_ closure: @escaping (Rep<Argument>) -> Rep<Result>)
     -> Rep<(Argument) -> Result> {
     return Rep(LambdaExpression { closure(Rep($0)).expression })
 }
@@ -312,21 +314,21 @@ func `if`<Result>(_ condition: Rep<Bool>, then: Rep<Result>, else: Rep<Result>) 
                             then: then.expression, else: `else`.expression))
 }
 
-let x = float(10)
-let y = float(20)
+let x = ^10.0
+let y = ^20.0
 (x + y).evaluated()
 
-let addTen = lambda { x in
-    x + float(10)
+let addTen = ^{ x in
+    x + ^10.0
 }
 addTen.evaluated()(10)
 
-let round = lambda { x in
-    `if`(x >= float(0.5), then: float(1), else: float(0))
+let round = ^{ x in
+    `if`(x >= ^0.5, then: ^1.0, else: ^0.0)
 }
-round[float(0.3)].evaluated()
-round[float(0.73)].evaluated()
+round[^0.3].evaluated()
+round[^0.73].evaluated()
 
 let curriedAdd: Rep<(Float) -> (Float) -> Float> =
-    lambda { x in lambda { y in x + y } }
+    ^{ x in ^{ y in x + y } }
 curriedAdd[x][y].evaluated()
