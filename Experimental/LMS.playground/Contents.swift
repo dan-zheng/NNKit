@@ -332,3 +332,10 @@ round[^0.73].evaluated()
 let curriedAdd: Rep<(Float) -> (Float) -> Float> =
     ^{ x in ^{ y in x + y } }
 curriedAdd[x][y].evaluated()
+
+func factorial(_ n: Rep<Int>) -> Rep<Int> {
+    let next = ^{ n in n * factorial(n - ^1) }
+    return `if`(n == ^0, then: ^1, else: next[n])
+}
+factorial(^0).evaluated()
+// factorial(^1).evaluated()
