@@ -1,16 +1,16 @@
 //: # Lightweight Modular Staging in Swift
 //: ## Base types
 
-class Environment {
+struct Environment {
     typealias SymbolTable = [Int : Any]
     private var count: Int = 0
     private var stack: [SymbolTable] = [[:]]
 
-    func enterScope() {
+    mutating func enterScope() {
         stack.append([:])
     }
 
-    func exitScope() {
+    mutating func exitScope() {
         stack.removeLast()
     }
 
@@ -24,11 +24,11 @@ class Environment {
         return nil
     }
 
-    func insert<T>(_ value: T, for symbol: Int) {
+    mutating func insert<T>(_ value: T, for symbol: Int) {
         stack[stack.endIndex - 1][symbol] = value
     }
 
-    func makeSymbol() -> Int {
+    mutating func makeSymbol() -> Int {
         defer { count += 1 }
         return count
     }
@@ -36,11 +36,11 @@ class Environment {
 
 protocol Staged : class {
     associatedtype Result
-    func evaluated(in env: Environment) -> Result
+    func evaluated(in env: inout Environment) -> Result
 }
 
 class Expression<Result> : Staged {
-    func evaluated(in env: Environment) -> Result {
+    func evaluated(in env: inout Environment) -> Result {
         fatalError("Oh no!")
     }
 }
@@ -63,7 +63,7 @@ class ConstantExpression<T> : Expression<T> {
         self.value = value
     }
 
-    override func evaluated(in env: Environment) -> T {
+    override func evaluated(in env: inout Environment) -> T {
         return value
     }
 }
@@ -76,7 +76,7 @@ class SymbolExpression<T> : Expression<T> {
         self.value = value
     }
 
-    override func evaluated(in env: Environment) -> T {
+    override func evaluated(in env: inout Environment) -> T {
         guard let val: T = env.value(for: value) else {
             fatalError("Unbound symbol \(value)")
         }
@@ -115,8 +115,8 @@ class BinaryExpression<Operator, Operand, Result> : Expression<Result> {
 
 class ArithmeticExpression<Operand : Numeric>
     : BinaryExpression<ArithmeticOperator, Operand, Operand> {
-    override func evaluated(in env: Environment) -> Result {
-        let lhs = left.evaluated(in: env), rhs = right.evaluated(in: env)
+    override func evaluated(in env: inout Environment) -> Result {
+        let lhs = left.evaluated(in: &env), rhs = right.evaluated(in: &env)
         let op: Combiner
         switch `operator` {
         case .add: op = (+)
@@ -129,8 +129,8 @@ class ArithmeticExpression<Operand : Numeric>
 
 class ComparisonExpression<Operand : Comparable>
     : BinaryExpression<ComparisonOperator, Operand, Bool> {
-    override func evaluated(in env: Environment) -> Bool {
-        let lhs = left.evaluated(in: env), rhs = right.evaluated(in: env)
+    override func evaluated(in env: inout Environment) -> Bool {
+        let lhs = left.evaluated(in: &env), rhs = right.evaluated(in: &env)
         let op: Combiner
         switch `operator` {
         case .equal: op = (==)
@@ -145,8 +145,8 @@ class ComparisonExpression<Operand : Comparable>
 }
 
 class BooleanExpression : BinaryExpression<BooleanOperator, Bool, Bool> {
-    override func evaluated(in env: Environment) -> Bool {
-        let lhs = left.evaluated(in: env), rhs = right.evaluated(in: env)
+    override func evaluated(in env: inout Environment) -> Bool {
+        let lhs = left.evaluated(in: &env), rhs = right.evaluated(in: &env)
         switch `operator` {
         case .and: return lhs && rhs
         case .or: return lhs || rhs
@@ -162,15 +162,14 @@ class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return> {
         self.closure = closure
     }
 
-    override func evaluated(in env: Environment) -> (Argument) -> Return {
+    override func evaluated(in env: inout Environment) -> (Argument) -> Return {
         let sym = env.makeSymbol()
         let symExp = SymbolExpression<Argument>(value: sym)
         let body = closure(symExp)
-        return { arg in
-            env.enterScope()
+        return { [env] arg in
+            var env = env
             env.insert(arg, for: sym)
-            let val = body.evaluated(in: env)
-            env.exitScope()
+            let val = body.evaluated(in: &env)
             return val
         }
     }
@@ -186,9 +185,9 @@ class ApplyExpression<Argument, Return> : Expression<Return> {
         self.argument = argument
     }
 
-    override func evaluated(in env: Environment) -> Return {
-        let argVal = argument.evaluated(in: env)
-        let cloVal = closure.evaluated(in: env)
+    override func evaluated(in env: inout Environment) -> Return {
+        let argVal = argument.evaluated(in: &env)
+        let cloVal = closure.evaluated(in: &env)
         return cloVal(argVal)
     }
 }
@@ -205,9 +204,9 @@ class IfExpression<Result> : Expression<Result> {
         self.`else` = `else`
     }
 
-    override func evaluated(in env: Environment) -> Result {
-        let condVal = condition.evaluated(in: env)
-        return condVal ? then.evaluated(in: env) : `else`.evaluated(in: env)
+    override func evaluated(in env: inout Environment) -> Result {
+        let condVal = condition.evaluated(in: &env)
+        return condVal ? then.evaluated(in: &env) : `else`.evaluated(in: &env)
     }
 }
 
@@ -215,7 +214,8 @@ class IfExpression<Result> : Expression<Result> {
 
 extension Rep {
     func evaluated() -> Result {
-        return expression.evaluated(in: Environment())
+        var env = Environment()
+        return expression.evaluated(in: &env)
     }
 }
 
@@ -336,3 +336,7 @@ let round = lambda { x in
 }
 round[float(0.3)].evaluated()
 round[float(0.73)].evaluated()
+
+let curriedAdd: Rep<(Float) -> (Float) -> Float> =
+    lambda { x in lambda { y in x + y } }
+curriedAdd[x][y].evaluated()
