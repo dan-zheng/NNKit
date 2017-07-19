@@ -185,11 +185,12 @@ class ApplyExpression<Argument, Return> : Expression<Return> {
 
 class IfExpression<Result> : Expression<Result> {
     var condition: Expression<Bool>
-    var then: Expression<Result>
-    var `else`: Expression<Result>
+    var then: () -> Expression<Result>
+    var `else`: () -> Expression<Result>
 
     init(condition: Expression<Bool>,
-         then: Expression<Result>, else: Expression<Result>) {
+         then: @autoclosure @escaping () -> Expression<Result>,
+         else: @autoclosure @escaping () -> Expression<Result>) {
         self.condition = condition
         self.then = then
         self.`else` = `else`
@@ -197,7 +198,7 @@ class IfExpression<Result> : Expression<Result> {
 
     override func evaluated(in env: Environment) -> Result {
         let condVal = condition.evaluated(in: env)
-        return condVal ? then.evaluated(in: env) : `else`.evaluated(in: env)
+        return condVal ? then().evaluated(in: env) : `else`().evaluated(in: env)
     }
 }
 
@@ -309,9 +310,12 @@ extension Rep {
     }
 }
 
-func `if`<Result>(_ condition: Rep<Bool>, then: Rep<Result>, else: Rep<Result>) -> Rep<Result> {
+func `if`<Result>(_ condition: Rep<Bool>,
+                  then: @autoclosure @escaping () -> Rep<Result>,
+                  else: @autoclosure @escaping () -> Rep<Result>) -> Rep<Result> {
     return Rep(IfExpression(condition: condition.expression,
-                            then: then.expression, else: `else`.expression))
+                            then: then().expression,
+                            else: `else`().expression))
 }
 
 let x = ^10.0
@@ -333,9 +337,15 @@ let curriedAdd: Rep<(Float) -> (Float) -> Float> =
     ^{ x in ^{ y in x + y } }
 curriedAdd[x][y].evaluated()
 
+/// Direct recursion
 func factorial(_ n: Rep<Int>) -> Rep<Int> {
+    return `if`(n == ^0, then: ^1, else: n * factorial(n - ^1))
+}
+factorial(^0).evaluated()
+factorial(^20).evaluated()
+
+/// Indirect recursion (not working)
+func factorialIndirect(_ n: Rep<Int>) -> Rep<Int> {
     let next = ^{ n in n * factorial(n - ^1) }
     return `if`(n == ^0, then: ^1, else: next[n])
 }
-factorial(^0).evaluated()
-// factorial(^1).evaluated()
