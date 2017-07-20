@@ -1,10 +1,32 @@
 //: # Lightweight Modular Staging in Swift
 //: ## Base types
 
+struct SourceLocation : Hashable {
+    var file: StaticString
+    var line: UInt
+    var column: UInt
+
+    static func ==(lhs: SourceLocation, rhs: SourceLocation) -> Bool {
+        return lhs.file.utf8Start == rhs.file.utf8Start
+            && lhs.line == rhs.line
+            && lhs.column == rhs.column
+    }
+
+    var hashValue: Int {
+        return file.utf8Start.hashValue ^ line.hashValue ^ column.hashValue
+    }
+}
+
+struct Closure<Argument, Return> {
+    var formal: Int
+    var body: Expression<Return>
+}
+
 class Environment {
     typealias SymbolTable = [Int : Any]
     private static var count: Int = 0
     private var symbolTable: SymbolTable = [:]
+    private static var closureTable: [SourceLocation : Any] = [:]
     weak var parent: Environment?
 
     init(parent: Environment?) {
@@ -18,6 +40,15 @@ class Environment {
 
     func insert<T>(_ value: T, for symbol: Int) {
         symbolTable[symbol] = value
+    }
+
+    static func closure<T, U>(at location: SourceLocation) -> Closure<T, U>? {
+        return closureTable[location] as? Closure<T, U>
+    }
+
+    static func registerClosure<T, U>(_ closure: Closure<T, U>,
+                                      at location: SourceLocation) {
+        closureTable[location] = closure
     }
 
     func makeSymbol() -> Int {
@@ -147,21 +178,29 @@ class BooleanExpression : BinaryExpression<BooleanOperator, Bool, Bool> {
 }
 
 class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return> {
-    typealias Closure = (Expression<Argument>) -> Expression<Return>
-    var closure: Closure
+    typealias MetaClosure = (Expression<Argument>) -> Expression<Return>
+    var metaClosure: MetaClosure
+    var location: SourceLocation
 
-    init(closure: @escaping Closure) {
-        self.closure = closure
+    init(closure: @escaping MetaClosure, location: SourceLocation) {
+        self.metaClosure = closure
+        self.location = location
     }
 
     override func evaluated(in env: Environment) -> (Argument) -> Return {
-        let sym = env.makeSymbol()
-        let symExp = SymbolExpression<Argument>(value: sym)
-        let body = closure(symExp)
+        let closure: Closure<Argument, Return> = Environment.closure(at: location)
+            ?? {
+            let sym = env.makeSymbol()
+            let symExp = SymbolExpression<Argument>(value: sym)
+            let body = metaClosure(symExp)
+            let closure = Closure<Argument, Return>(formal: sym, body: body)
+            Environment.registerClosure(closure, at: location)
+            return closure
+        }()
         return { arg in
             let newEnv = Environment(parent: env)
-            newEnv.insert(arg, for: sym)
-            return body.evaluated(in: newEnv)
+            newEnv.insert(arg, for: closure.formal)
+            return closure.body.evaluated(in: newEnv)
         }
     }
 }
@@ -296,9 +335,12 @@ extension Rep where Result == Bool {
     }
 }
 
-prefix func ^<Argument, Result>(_ closure: @escaping (Rep<Argument>) -> Rep<Result>)
-    -> Rep<(Argument) -> Result> {
-    return Rep(LambdaExpression { closure(Rep($0)).expression })
+func lambda<Argument, Result>(
+    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    _ closure: @escaping (Rep<Argument>) -> Rep<Result>) -> Rep<(Argument) -> Result> {
+    let loc = SourceLocation(file: file, line: line, column: column)
+    return Rep(LambdaExpression(closure: { closure(Rep($0)).expression },
+                                location: loc))
 }
 
 extension Rep {
@@ -322,19 +364,19 @@ let x = ^10.0
 let y = ^20.0
 (x + y).evaluated()
 
-let addTen = ^{ x in
+let addTen = lambda { x in
     x + ^10.0
 }
 addTen.evaluated()(10)
 
-let round = ^{ x in
+let round = lambda { x in
     `if`(x >= ^0.5, then: ^1.0, else: ^0.0)
 }
 round[^0.3].evaluated()
 round[^0.73].evaluated()
 
 let curriedAdd: Rep<(Float) -> (Float) -> Float> =
-    ^{ x in ^{ y in x + y } }
+    lambda { x in lambda { y in x + y } }
 curriedAdd[x][y].evaluated()
 
 /// Direct recursion
@@ -343,9 +385,13 @@ func factorial(_ n: Rep<Int>) -> Rep<Int> {
 }
 factorial(^0).evaluated()
 factorial(^20).evaluated()
+factorial(^5)
 
 /// Indirect recursion (not working)
 func factorialIndirect(_ n: Rep<Int>) -> Rep<Int> {
-    let next = ^{ n in n * factorial(n - ^1) }
+    let next = lambda { n in n * factorial(n - ^1) }
     return `if`(n == ^0, then: ^1, else: next[n])
 }
+factorialIndirect(^0).evaluated()
+factorialIndirect(^1).evaluated()
+factorialIndirect(^20).evaluated()
