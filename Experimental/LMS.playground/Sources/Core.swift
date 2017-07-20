@@ -269,65 +269,44 @@ class CondExpression<Result> : Expression<Result> {
     }
 }
 
-class MapExpression<Argument, Return> : Expression<[Return]> {
-    typealias Closure = Expression<(Argument) -> Return>
-    var closure: Closure
-    var sequence: Expression<[Argument]>
+class MapExpression<Argument, Result> : Expression<[Result]> {
+    typealias Functor = Expression<(Argument) -> Result>
+    var functor: Functor
+    var array: Expression<[Argument]>
 
-    init(closure: Closure, sequence: Expression<[Argument]>) {
-        self.closure = closure
-        self.sequence = sequence
+    init(functor: Functor, array: Expression<[Argument]>) {
+        self.functor = functor
+        self.array = array
     }
 
-    override func evaluated(in env: Environment) -> [Return] {
-        let cloVal = closure.evaluated(in: env)
-        let seqVal = sequence.evaluated(in: env)
-        return seqVal.map { cloVal($0) }
+    override func evaluated(in env: Environment) -> [Result] {
+        let cloVal = functor.evaluated(in: env)
+        let arrVal = array.evaluated(in: env)
+        return arrVal.map { cloVal($0) }
     }
 }
 
-class ReduceExpression<Argument, Return> : Expression<Return> {
-    typealias Closure = Expression<(Return) -> (Argument) -> Return>
-    var closure: Closure
-    var accumulator: Expression<Return>
-    var sequence: Expression<[Argument]>
+class ReduceExpression<Argument, Result> : Expression<Result> {
+    typealias Combiner = Expression<((Result, Argument)) -> Result>
+    var combiner: Combiner
+    var initial: Expression<Result>
+    var array: Expression<[Argument]>
 
-    init(closure: Closure, accumulator: Expression<Return>, sequence: Expression<[Argument]>) {
-        self.closure = closure
-        self.accumulator = accumulator
-        self.sequence = sequence
+    init(initial: Expression<Result>, combiner: Combiner,
+         array: Expression<[Argument]>) {
+        self.initial = initial
+        self.combiner = combiner
+        self.array = array
     }
 
-    override func evaluated(in env: Environment) -> Return {
+    override func evaluated(in env: Environment) -> Result {
         // TODO: refactor after multiple args are supported
-        let cloVal = closure.evaluated(in: env)
-        var accVal = accumulator.evaluated(in: env)
-        let seqVal = sequence.evaluated(in: env)
-        for v in seqVal {
-            accVal = cloVal(accVal)(v)
+        let cloVal = combiner.evaluated(in: env)
+        var accVal = initial.evaluated(in: env)
+        let arrVal = array.evaluated(in: env)
+        for v in arrVal {
+            accVal = cloVal((accVal, v))
         }
         return accVal
     }
 }
-
-/*
-class ReduceExpression<Argument, Return> : Expression<Return> {
-    typealias Closure = Expression<(Return, Argument) -> Return>
-    var closure: Closure
-    var accumulator: Expression<Return>
-    var sequence: Expression<[Argument]>
-
-    init(closure: Closure, accumulator: Expression<Return>, sequence: Expression<[Argument]>) {
-        self.closure = closure
-        self.accumulator = accumulator
-        self.sequence = sequence
-    }
-
-    override func evaluated(in env: Environment) -> Return {
-        let cloVal = closure.evaluated(in: env)
-        let accVal = accumulator.evaluated(in: env)
-        let seqVal = sequence.evaluated(in: env)
-        return seqVal.reduce(accVal, cloVal)
-    }
-}
-*/
