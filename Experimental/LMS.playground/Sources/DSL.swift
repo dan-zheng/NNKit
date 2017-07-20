@@ -174,17 +174,27 @@ public func cond<Result>(
 }
 
 public extension Rep {
-    func map<Argument, Return>(_ fn: Rep<(Argument) -> Return>) -> Rep<[Return]> where Result == [Argument] {
-        return MapExpression<Argument, Return>(closure: fn, sequence: self)
+    func map<Argument, MapResult>(_ fn: Rep<(Argument) -> MapResult>) -> Rep<[MapResult]>
+        where Result == [Argument] {
+        return MapExpression(functor: fn, array: self)
     }
 
-    func reduce<Argument, Return>(_ fn: Rep<(Return) -> (Argument) -> Return>, _ acc: Rep<Return>) -> Rep<Return> where Result == [Argument] {
-        return ReduceExpression(closure: fn, accumulator: acc, sequence: self)
+    func map<Argument, MapResult>(_ fn: @escaping (Rep<Argument>) -> Rep<MapResult>) -> Rep<[MapResult]>
+        where Result == [Argument] {
+        return map(lambda(fn))
     }
 
-    /*
-    func reduce<Argument, Return>(_ fn: Rep<(Return, Argument) -> Return>, _ acc: Rep<Return>) -> Rep<Return> where Result == [Argument] {
-        return ReduceExpression(closure: fn, accumulator: acc, sequence: self)
+    func reduce<Argument, ReductionResult>(
+        _ initial: Rep<ReductionResult>,
+        _ combiner: Rep<((ReductionResult, Argument)) -> ReductionResult>) -> Rep<ReductionResult>
+        where Result == [Argument] {
+        return ReduceExpression(initial: initial, combiner: combiner, array: self)
     }
-    */
+
+    func reduce<Argument, ReductionResult>(
+        _ initial: Rep<ReductionResult>,
+        _ combiner: @escaping (Rep<(ReductionResult, Argument)>) -> Rep<ReductionResult>) -> Rep<ReductionResult>
+        where Result == [Argument] {
+        return reduce(initial, lambda(combiner))
+    }
 }
