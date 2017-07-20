@@ -22,6 +22,10 @@ let curriedAdd: Rep<(Float) -> (Float) -> Float> =
     lambda { x in lambda { y in x + y } }
 curriedAdd[x][y].evaluated()
 
+/// Cond
+let absolute = cond(x > ^0, x, else: ^(-1) * x)
+absolute.evaluated()
+
 /// Direct recursion
 func factorial(_ n: Rep<Int>) -> Rep<Int> {
     return `if`(n == ^0, then: ^1, else: n * factorial(n - ^1))
@@ -52,3 +56,13 @@ let apply = lambda { (f: Rep<(Int) -> Int>) in
     lambda { x in f[x] }
 }
 apply[addTen][^20].evaluated()
+
+/// Map
+let double = lambda { x in x * ^2.0 }
+let arr = ^[1.0, 2.0, 3.0]
+arr.map(double).evaluated()
+arr.map(double).map(double).evaluated()
+
+/// Reduce
+arr.reduce(curriedAdd, ^4.0).evaluated()
+arr.map(double).reduce(curriedAdd, ^(-12.0)).evaluated()

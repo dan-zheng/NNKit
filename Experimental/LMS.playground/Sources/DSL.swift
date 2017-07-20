@@ -22,6 +22,18 @@ public prefix func ^(_ value: Bool) -> Rep<Bool> {
     return ConstantExpression(value: value)
 }
 
+public prefix func ^(_ value: [Int]) -> Rep<[Int]> {
+    return ConstantExpression(value: value)
+}
+
+public prefix func ^(_ value: [Float]) -> Rep<[Float]> {
+    return ConstantExpression(value: value)
+}
+
+public prefix func ^(_ value: [Bool]) -> Rep<[Bool]> {
+    return ConstantExpression(value: value)
+}
+
 public extension Rep where Result : Numeric {
     static func + (lhs: Rep<Result>, rhs: Rep<Result>) -> Rep<Result> {
         return ArithmeticExpression(operator: .add, left: lhs, right: rhs)
@@ -81,6 +93,8 @@ public func lambda<Argument, Result>(
     let loc = SourceLocation(file: file, line: line, column: column)
     return LambdaExpression(closure: closure, location: loc)
 }
+
+// TODO: Add support for lambda with multiple args
 
 public extension Rep {
     subscript<Argument, ClosureResult>(_ arg: Rep<Argument>) -> Rep<ClosureResult>
@@ -147,4 +161,20 @@ public func cond<Result>(
                                     (cond4, then4),
                                     (cond5, then5)],
                           else: `else`)
+}
+
+public extension Rep {
+    func map<Argument, Return>(_ fn: Rep<(Argument) -> Return>) -> Rep<[Return]> where Result == [Argument] {
+        return MapExpression<Argument, Return>(closure: fn, sequence: self)
+    }
+
+    func reduce<Argument, Return>(_ fn: Rep<(Return) -> (Argument) -> Return>, _ acc: Rep<Return>) -> Rep<Return> where Result == [Argument] {
+        return ReduceExpression(closure: fn, accumulator: acc, sequence: self)
+    }
+
+    /*
+    func reduce<Argument, Return>(_ fn: Rep<(Return, Argument) -> Return>, _ acc: Rep<Return>) -> Rep<Return> where Result == [Argument] {
+        return ReduceExpression(closure: fn, accumulator: acc, sequence: self)
+    }
+    */
 }
