@@ -72,7 +72,6 @@ public class Expression<Result> {
 
 class ConstantExpression<Result> : Expression<Result> {
     var value: Result
-    
     init(value: Result) {
         self.value = value
     }
@@ -84,7 +83,6 @@ class ConstantExpression<Result> : Expression<Result> {
 
 class SymbolExpression<Result> : Expression<Result> {
     var value: UInt
-    
     init(value: UInt) {
         self.value = value
     }
@@ -178,13 +176,13 @@ class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return> {
     override func evaluated(in env: Environment) -> (Argument) -> Return {
         let closure: Closure<Argument, Return> = Environment.closure(at: location)
             ?? {
-            let sym = env.makeSymbol()
-            let symExp = SymbolExpression<Argument>(value: sym)
-            let body = metaClosure(symExp)
-            let closure = Closure<Argument, Return>(formal: sym, body: body)
-            Environment.registerClosure(closure, at: location)
-            return closure
-        }()
+                let sym = env.makeSymbol()
+                let symExp = SymbolExpression<Argument>(value: sym)
+                let body = metaClosure(symExp)
+                let closure = Closure<Argument, Return>(formal: sym, body: body)
+                Environment.registerClosure(closure, at: location)
+                return closure
+            }()
         return { arg in
             let newEnv = Environment(parent: env)
             newEnv.insert(arg, for: closure.formal)
@@ -246,3 +244,66 @@ class CondExpression<Result> : Expression<Result> {
         return `else`().evaluated(in: env)
     }
 }
+
+class MapExpression<Argument, Return> : Expression<[Return]> {
+    typealias Closure = Expression<(Argument) -> Return>
+    var closure: Closure
+    var sequence: Expression<[Argument]>
+
+    init(closure: Closure, sequence: Expression<[Argument]>) {
+        self.closure = closure
+        self.sequence = sequence
+    }
+
+    override func evaluated(in env: Environment) -> [Return] {
+        let cloVal = closure.evaluated(in: env)
+        let seqVal = sequence.evaluated(in: env)
+        return seqVal.map { cloVal($0) }
+    }
+}
+
+class ReduceExpression<Argument, Return> : Expression<Return> {
+    typealias Closure = Expression<(Return) -> (Argument) -> Return>
+    var closure: Closure
+    var accumulator: Expression<Return>
+    var sequence: Expression<[Argument]>
+
+    init(closure: Closure, accumulator: Expression<Return>, sequence: Expression<[Argument]>) {
+        self.closure = closure
+        self.accumulator = accumulator
+        self.sequence = sequence
+    }
+
+    override func evaluated(in env: Environment) -> Return {
+        // TODO: refactor after multiple args are supported
+        let cloVal = closure.evaluated(in: env)
+        var accVal = accumulator.evaluated(in: env)
+        let seqVal = sequence.evaluated(in: env)
+        for v in seqVal {
+            accVal = cloVal(accVal)(v)
+        }
+        return accVal
+    }
+}
+
+/*
+class ReduceExpression<Argument, Return> : Expression<Return> {
+    typealias Closure = Expression<(Return, Argument) -> Return>
+    var closure: Closure
+    var accumulator: Expression<Return>
+    var sequence: Expression<[Argument]>
+
+    init(closure: Closure, accumulator: Expression<Return>, sequence: Expression<[Argument]>) {
+        self.closure = closure
+        self.accumulator = accumulator
+        self.sequence = sequence
+    }
+
+    override func evaluated(in env: Environment) -> Return {
+        let cloVal = closure.evaluated(in: env)
+        let accVal = accumulator.evaluated(in: env)
+        let seqVal = sequence.evaluated(in: env)
+        return seqVal.reduce(accVal, cloVal)
+    }
+}
+*/
