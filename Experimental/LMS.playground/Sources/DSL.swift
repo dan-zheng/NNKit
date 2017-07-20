@@ -10,27 +10,48 @@ public extension Rep {
 
 prefix operator ^
 
-public prefix func ^(_ value: Int) -> Rep<Int> {
+public protocol Stageable {
+    static prefix func ^(_ value: Self) -> Rep<Self>
+}
+
+public extension Stageable {
+    var staged: Rep<Self> {
+        return ^self
+    }
+}
+
+extension Int : Stageable {
+    public static prefix func ^ (_ value: Int) -> Rep<Int> {
+        return ConstantExpression(value: value)
+    }
+}
+
+extension Bool : Stageable {
+    public static prefix func ^ (_ value: Bool) -> Rep<Bool> {
+        return ConstantExpression(value: value)
+    }
+}
+
+extension Float : Stageable {
+    public static prefix func ^ (_ value: Float) -> Rep<Float> {
+        return ConstantExpression(value: value)
+    }
+}
+
+extension Array where Element : Stageable {
+    public static prefix func ^ (_ value: [Element]) -> Rep<[Element]> {
+        return ConstantExpression(value: value)
+    }
+}
+
+/// - Note: Special case, we make it such that `Float` can be inferred top-down.
+/// Otherwise the type system would infer an array literal of floats as
+/// `[Double]`.
+public prefix func ^ (_ value: [Float]) -> Rep<[Float]> {
     return ConstantExpression(value: value)
 }
 
-public prefix func ^(_ value: Float) -> Rep<Float> {
-    return ConstantExpression(value: value)
-}
-
-public prefix func ^(_ value: Bool) -> Rep<Bool> {
-    return ConstantExpression(value: value)
-}
-
-public prefix func ^(_ value: [Int]) -> Rep<[Int]> {
-    return ConstantExpression(value: value)
-}
-
-public prefix func ^(_ value: [Float]) -> Rep<[Float]> {
-    return ConstantExpression(value: value)
-}
-
-public prefix func ^(_ value: [Bool]) -> Rep<[Bool]> {
+public prefix func ^ <T : Stageable>(_ value: [T]) -> Rep<[T]> {
     return ConstantExpression(value: value)
 }
 
@@ -103,8 +124,6 @@ public func lambda<Argument, Result>(
     let loc = SourceLocation(file: file, line: line, column: column)
     return LambdaExpression(closure: closure, location: loc)
 }
-
-// TODO: Add support for lambda with multiple args
 
 public extension Rep {
     subscript<Argument, ClosureResult>(_ arg: Rep<Argument>) -> Rep<ClosureResult>
