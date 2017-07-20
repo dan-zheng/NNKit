@@ -48,6 +48,12 @@ public extension Rep where Result : Numeric {
     }
 }
 
+public extension Rep where Result : SignedNumeric {
+    static prefix func - (operand: Rep<Result>) -> Rep<Result> {
+        return NegateExpression(operand: operand)
+    }
+}
+
 public extension Rep where Result : Comparable {
     static func > (lhs: Rep<Result>, rhs: Rep<Result>) -> Rep<Bool> {
         return ComparisonExpression(operator: .greaterThan,
@@ -84,6 +90,10 @@ public extension Rep where Result == Bool {
 
     static func || (lhs: Rep<Bool>, rhs: Rep<Bool>) -> Rep<Bool> {
         return BooleanExpression(operator: .or, left: lhs, right: rhs)
+    }
+
+    static prefix func ! (operand: Rep<Bool>) -> Rep<Bool> {
+        return LogicalNotExpression(operand: operand)
     }
 }
 

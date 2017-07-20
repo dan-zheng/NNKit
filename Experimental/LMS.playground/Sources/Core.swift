@@ -163,6 +163,30 @@ class BooleanExpression : BinaryExpression<BooleanOperator, Bool, Bool> {
     }
 }
 
+class NegateExpression<Operand : SignedNumeric> : Expression<Operand> {
+    var operand: Expression<Operand>
+
+    init(operand: Expression<Operand>) {
+        self.operand = operand
+    }
+
+    override func evaluated(in env: Environment) -> Operand {
+        return -operand.evaluated(in: env)
+    }
+}
+
+class LogicalNotExpression : Expression<Bool> {
+    var operand: Expression<Bool>
+
+    init(operand: Expression<Bool>) {
+        self.operand = operand
+    }
+
+    override func evaluated(in env: Environment) -> Bool {
+        return !operand.evaluated(in: env)
+    }
+}
+
 class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return> {
     typealias MetaClosure = (Expression<Argument>) -> Expression<Return>
     var metaClosure: MetaClosure
