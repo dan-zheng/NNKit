@@ -293,10 +293,23 @@ final class ApplyExpression<Argument, Return> : Expression<Return> {
 
 final class IfExpression<Result> : Expression<Result> {
     let condition: Expression<Bool>
+
     private let makeThen: () -> Expression<Result>
     private let makeElse: () -> Expression<Result>
-    lazy var then: Expression<Result> = self.makeThen()
-    lazy var `else`: Expression<Result> = self.makeElse()
+
+    lazy var then: Expression<Result> = {
+        let then = self.makeThen()
+        self.shouldInvalidateCache =
+            self.shouldInvalidateCache || then.shouldInvalidateCache
+        return then
+    }()
+
+    lazy var `else`: Expression<Result> = {
+        let `else` = self.makeElse()
+        self.shouldInvalidateCache =
+            self.shouldInvalidateCache || `else`.shouldInvalidateCache
+        return `else`
+    }()
 
     init(condition: Expression<Bool>,
          then: @autoclosure @escaping () -> Expression<Result>,
@@ -324,24 +337,18 @@ final class CondExpression<Result> : Expression<Result> {
     enum ThenClause {
         case uninitialized(() -> Expression<Result>)
         case initialized(Expression<Result>)
-
-        var initialized: Expression<Result> {
-            mutating get {
-                switch self {
-                case let .initialized(exp):
-                    return exp
-                case let .uninitialized(makeExp):
-                    let exp = makeExp()
-                    self = .initialized(exp)
-                    return exp
-                }
-            }
-        }
     }
     typealias Clause = (Expression<Bool>, ThenClause)
     var clauses: [Clause]
+
     private let makeElse: () -> Expression<Result>
-    lazy var `else`: Expression<Result> = self.makeElse()
+
+    lazy var `else`: Expression<Result> = {
+        let `else` = self.makeElse()
+        self.shouldInvalidateCache =
+            self.shouldInvalidateCache || `else`.shouldInvalidateCache
+        return `else`
+    }()
 
     init(clauses: [(Expression<Bool>, () -> Expression<Result>)],
          `else`: @autoclosure @escaping () -> Expression<Result>) {
@@ -362,8 +369,18 @@ final class CondExpression<Result> : Expression<Result> {
     }
 
     fileprivate override func evaluated(in env: Environment) -> Result {
-        for (i, (cond, _)) in clauses.enumerated() where cond.result(in: env) {
-            return clauses[i].1.initialized.result(in: env)
+        for (i, (cond, then)) in clauses.enumerated() where cond.result(in: env) {
+            let exp: Expression<Result>
+            switch then {
+            case let .initialized(inited):
+                exp = inited
+            case let .uninitialized(makeExp):
+                exp = makeExp()
+                clauses[i].1 = .initialized(exp)
+                shouldInvalidateCache =
+                    shouldInvalidateCache || exp.shouldInvalidateCache
+            }
+            return exp.result(in: env)
         }
         return `else`.result(in: env)
     }
