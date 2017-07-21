@@ -30,6 +30,23 @@ class LMSTests : XCTestCase {
         XCTAssertEqual(result, 1.2)
     }
 
+    func testDirectRecursion() {
+        func factorial(_ n: Rep<Int>) -> Rep<Int> {
+            return `if`(n == ^0, then: ^1, else: n * factorial(n - ^1))
+        }
+        let result = factorial(^5).evaluated()
+        XCTAssertEqual(result, 120)
+    }
+
+    func testIndirectRecursion() {
+        func factorial(_ n: Rep<Int>) -> Rep<Int> {
+            let next = lambda { n in n * factorial(n - ^1) }
+            return `if`(n == ^0, then: ^1, else: next[n])
+        }
+        let result = factorial(^5).evaluated()
+        XCTAssertEqual(result, 120)
+    }
+
     func testHOF() {
         let array = ^[1.0, 2.0, 3.0, 4.0]
         let sum = array.reduce(^0, +)
