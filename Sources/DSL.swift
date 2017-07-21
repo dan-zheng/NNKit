@@ -473,6 +473,14 @@ public prefix func *<A, B, C, D, E, F, G, H, I, J>(
 
 // MARK: - Lambda abstraction
 
+public func lambda<Result>(
+    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    _ closure: @escaping () -> Rep<Result>
+    ) -> Rep<() -> Result> {
+    let loc = SourceLocation(file: file, line: line, column: column)
+    return LambdaExpression(closure: { _ in closure() }, location: loc)
+}
+
 public func lambda<Argument, Result>(
     file: StaticString = #file, line: UInt = #line, column: UInt = #column,
     _ closure: @escaping (Rep<Argument>) -> Rep<Result>
@@ -598,11 +606,17 @@ public func lambda<A, B, C, D, E, F, G, H, I, J, Result>(
 }
 
 public extension Rep {
-    subscript<Argument, ClosureResult>(_ arg: Rep<Argument>)
-        -> Rep<ClosureResult>
-        where Result == (Argument) -> ClosureResult {
-        return ApplyExpression<Argument, ClosureResult>(closure: self,
-                                                        argument: arg)
+    subscript<ClosureResult>() -> Rep<ClosureResult>
+        where Result == () -> ClosureResult
+    {
+        let void = ConstantExpression(value: ())
+        return ApplyExpression<(), ClosureResult>(closure: self, argument: void)
+    }
+
+    subscript<A, ClosureResult>(_ arg: Rep<A>) -> Rep<ClosureResult>
+        where Result == (A) -> ClosureResult
+    {
+        return ApplyExpression<A, ClosureResult>(closure: self, argument: arg)
     }
 
     subscript<A, B, ClosureResult>(_ a: Rep<A>, _ b: Rep<B>) -> Rep<ClosureResult>
