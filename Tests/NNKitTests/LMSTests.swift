@@ -52,6 +52,19 @@ class LMSTests : XCTestCase {
         XCTAssertEqual(result, 120)
     }
 
+    func testResultCaching() {
+        let sumTimes10: Rep<(Int, Int) -> (Int) -> Int> =
+            lambda { x, y in lambda { z in (x + y + z) * ^10 } }
+        let prod = sumTimes10[^3, ^4][^5]
+        XCTAssertEqual(prod.!, 120)
+        XCTAssertEqual(prod.!, 120)
+        let prod2 = sumTimes10[^1, ^2][prod]
+        XCTAssertEqual(prod2.!, 1230)
+        XCTAssertEqual(prod2.!, 1230)
+        XCTAssertEqual(prod.!, 120)
+        XCTAssertEqual(prod2.!, 1230)
+    }
+
     func testHOF() {
         let array = ^[1.0, 2.0, 3.0, 4.0]
         let sum = array.reduce(0, +)
@@ -68,6 +81,7 @@ class LMSTests : XCTestCase {
             ("testTuple", testTuple),
             ("testDirectRecursion", testDirectRecursion),
             ("testIndirectRecursion", testIndirectRecursion),
+            ("testResultCaching", testResultCaching),
             ("testHOF", testHOF)
         ]
     }
