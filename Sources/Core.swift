@@ -52,7 +52,7 @@ public class Expression<Result> : Staged {
     }
 }
 
-class ConstantExpression<Result> : Expression<Result> {
+final class ConstantExpression<Result> : Expression<Result> {
     var value: Result
 
     init(value: Result) {
@@ -68,7 +68,7 @@ class ConstantExpression<Result> : Expression<Result> {
     }
 }
 
-class SymbolExpression<Result> : Expression<Result> {
+final class SymbolExpression<Result> : Expression<Result> {
     var value: UInt
 
     init(value: UInt) {
@@ -122,7 +122,7 @@ class BinaryExpression<Operator, Operand, Result> : Expression<Result> {
     }
 }
 
-class ArithmeticExpression<Operand : Numeric>
+final class ArithmeticExpression<Operand : Numeric>
     : BinaryExpression<ArithmeticOperator, Operand, Operand> {
     override fileprivate func evaluated(in env: Environment) -> Operand {
         let lhs = left.result(in: env), rhs = right.result(in: env)
@@ -136,7 +136,7 @@ class ArithmeticExpression<Operand : Numeric>
     }
 }
 
-class IntegerDivisionExpresison<Operand : BinaryInteger>
+final class IntegerDivisionExpresison<Operand : BinaryInteger>
     : BinaryExpression<DivisionOperator, Operand, Operand> {
     override fileprivate func evaluated(in env: Environment) -> Operand {
         let lhs = left.result(in: env), rhs = right.result(in: env)
@@ -149,7 +149,7 @@ class IntegerDivisionExpresison<Operand : BinaryInteger>
     }
 }
 
-class FloatingPointDivisionExpression<Operand : FloatingPoint>
+final class FloatingPointDivisionExpression<Operand : FloatingPoint>
     : BinaryExpression<DivisionOperator, Operand, Operand> {
     override fileprivate func evaluated(in env: Environment) -> Operand {
         let lhs = left.result(in: env), rhs = right.result(in: env)
@@ -160,7 +160,7 @@ class FloatingPointDivisionExpression<Operand : FloatingPoint>
     }
 }
 
-class ComparisonExpression<Operand : Comparable>
+final class ComparisonExpression<Operand : Comparable>
     : BinaryExpression<ComparisonOperator, Operand, Bool> {
     override fileprivate func evaluated(in env: Environment) -> Bool {
         let lhs = left.result(in: env), rhs = right.result(in: env)
@@ -177,7 +177,7 @@ class ComparisonExpression<Operand : Comparable>
     }
 }
 
-class BooleanExpression : BinaryExpression<BooleanOperator, Bool, Bool> {
+final class BooleanExpression : BinaryExpression<BooleanOperator, Bool, Bool> {
     override fileprivate func evaluated(in env: Environment) -> Bool {
         let lhs = left.result(in: env), rhs = right.result(in: env)
         switch `operator` {
@@ -187,7 +187,7 @@ class BooleanExpression : BinaryExpression<BooleanOperator, Bool, Bool> {
     }
 }
 
-class NegateExpression<Operand : SignedNumeric> : Expression<Operand> {
+final class NegateExpression<Operand : SignedNumeric> : Expression<Operand> {
     var operand: Expression<Operand>
 
     init(operand: Expression<Operand>) {
@@ -203,7 +203,7 @@ class NegateExpression<Operand : SignedNumeric> : Expression<Operand> {
     }
 }
 
-class LogicalNotExpression : Expression<Bool> {
+final class LogicalNotExpression : Expression<Bool> {
     var operand: Expression<Bool>
 
     init(operand: Expression<Bool>) {
@@ -219,7 +219,7 @@ class LogicalNotExpression : Expression<Bool> {
     }
 }
 
-class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return> {
+final class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return> {
     typealias MetaClosure = (Expression<Argument>) -> Expression<Return>
     var metaClosure: MetaClosure
     var location: SourceLocation
@@ -251,7 +251,7 @@ class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return> {
     }
 }
 
-class ApplyExpression<Argument, Return> : Expression<Return> {
+final class ApplyExpression<Argument, Return> : Expression<Return> {
     typealias Closure = Expression<(Argument) -> Return>
     var closure: Closure
     var argument: Expression<Argument>
@@ -272,7 +272,7 @@ class ApplyExpression<Argument, Return> : Expression<Return> {
     }
 }
 
-class IfExpression<Result> : Expression<Result> {
+final class IfExpression<Result> : Expression<Result> {
     var condition: Expression<Bool>
     var then: () -> Expression<Result>
     var `else`: () -> Expression<Result>
@@ -296,7 +296,7 @@ class IfExpression<Result> : Expression<Result> {
     }
 }
 
-class CondExpression<Result> : Expression<Result> {
+final class CondExpression<Result> : Expression<Result> {
     typealias Clause = (Expression<Bool>, () -> Expression<Result>)
     var clauses: [Clause]
     var `else`: () -> Expression<Result>
@@ -322,7 +322,7 @@ class CondExpression<Result> : Expression<Result> {
     }
 }
 
-class MapExpression<Argument, MapResult> : Expression<[MapResult]> {
+final class MapExpression<Argument, MapResult> : Expression<[MapResult]> {
     typealias Functor = Expression<(Argument) -> MapResult>
     var functor: Functor
     var array: Expression<[Argument]>
@@ -343,7 +343,7 @@ class MapExpression<Argument, MapResult> : Expression<[MapResult]> {
     }
 }
 
-class ReduceExpression<Argument, Result> : Expression<Result> {
+final class ReduceExpression<Argument, Result> : Expression<Result> {
     typealias Combiner = Expression<(Result, Argument) -> Result>
     var combiner: Combiner
     var initial: Expression<Result>
@@ -374,7 +374,7 @@ class ReduceExpression<Argument, Result> : Expression<Result> {
     }
 }
 
-class TupleExpression<First, Second> : Expression<(First, Second)> {
+final class TupleExpression<First, Second> : Expression<(First, Second)> {
     let first: Expression<First>
     let second: Expression<Second>
 
@@ -392,7 +392,7 @@ class TupleExpression<First, Second> : Expression<(First, Second)> {
     }
 }
 
-class TupleExtractFirstExpression<First, Second> : Expression<First> {
+final class TupleExtractFirstExpression<First, Second> : Expression<First> {
     let tuple: Expression<(First, Second)>
 
     init(_ tuple: Expression<(First, Second)>) {
@@ -408,7 +408,7 @@ class TupleExtractFirstExpression<First, Second> : Expression<First> {
     }
 }
 
-class TupleExtractSecondExpression<First, Second> : Expression<Second> {
+final class TupleExtractSecondExpression<First, Second> : Expression<Second> {
     let tuple: Expression<(First, Second)>
 
     init(_ tuple: Expression<(First, Second)>) {
