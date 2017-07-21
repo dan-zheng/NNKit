@@ -25,7 +25,7 @@ postfix operator .!
 
 public extension Rep {
     func evaluated() -> Result {
-        return evaluated(in: Environment(parent: nil))
+        return result(in: Environment(parent: nil))
     }
 
     postfix static func .!(x: Rep<Result>) -> Result {

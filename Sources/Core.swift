@@ -19,12 +19,31 @@
 
 protocol Staged {
     associatedtype Result
-    func evaluated(in env: Environment) -> Result
+    func result(in env: Environment) -> Result
 }
 
 public class Expression<Result> : Staged {
-    func evaluated(in env: Environment) -> Result {
+    final var cachedResult: Result? = nil
+
+    var shouldInvalidateCache: Bool {
         fatalError("Oh no!")
+    }
+
+    fileprivate func evaluated(in env: Environment) -> Result {
+        fatalError("Oh no!")
+    }
+
+    private final func cache(_ result: Result) -> Result {
+        cachedResult = result
+        return result
+    }
+
+    final func result(in env: Environment) -> Result {
+        if shouldInvalidateCache {
+            cachedResult = nil
+            return evaluated(in: env)
+        }
+        return cachedResult ?? cache(evaluated(in: env))
     }
 }
 
@@ -35,7 +54,11 @@ class ConstantExpression<Result> : Expression<Result> {
         self.value = value
     }
 
-    override func evaluated(in env: Environment) -> Result {
+    override var shouldInvalidateCache: Bool {
+        return false
+    }
+
+    override fileprivate func evaluated(in env: Environment) -> Result {
         return value
     }
 }
@@ -47,7 +70,11 @@ class SymbolExpression<Result> : Expression<Result> {
         self.value = value
     }
 
-    override func evaluated(in env: Environment) -> Result {
+    override var shouldInvalidateCache: Bool {
+        return true
+    }
+
+    override fileprivate func evaluated(in env: Environment) -> Result {
         guard let val: Result = env.value(for: value) else {
             fatalError("Unbound symbol \(value)")
         }
@@ -78,6 +105,10 @@ class BinaryExpression<Operator, Operand, Result> : Expression<Result> {
     var left: Expression<Operand>
     var right: Expression<Operand>
 
+    override var shouldInvalidateCache: Bool {
+        return left.shouldInvalidateCache || right.shouldInvalidateCache
+    }
+
     init(operator: Operator, left: Expression<Operand>,
          right: Expression<Operand>) {
         self.`operator` = `operator`
@@ -88,8 +119,8 @@ class BinaryExpression<Operator, Operand, Result> : Expression<Result> {
 
 class ArithmeticExpression<Operand : Numeric>
     : BinaryExpression<ArithmeticOperator, Operand, Operand> {
-    override func evaluated(in env: Environment) -> Operand {
-        let lhs = left.evaluated(in: env), rhs = right.evaluated(in: env)
+    override fileprivate func evaluated(in env: Environment) -> Operand {
+        let lhs = left.result(in: env), rhs = right.result(in: env)
         let op: Combiner
         switch `operator` {
         case .add: op = (+)
@@ -102,8 +133,8 @@ class ArithmeticExpression<Operand : Numeric>
 
 class IntegerDivisionExpresison<Operand : BinaryInteger>
     : BinaryExpression<DivisionOperator, Operand, Operand> {
-    override func evaluated(in env: Environment) -> Operand {
-        let lhs = left.evaluated(in: env), rhs = right.evaluated(in: env)
+    override fileprivate func evaluated(in env: Environment) -> Operand {
+        let lhs = left.result(in: env), rhs = right.result(in: env)
         let op: Combiner
         switch `operator` {
         case .divide: op = (/)
@@ -115,8 +146,8 @@ class IntegerDivisionExpresison<Operand : BinaryInteger>
 
 class FloatingPointDivisionExpression<Operand : FloatingPoint>
     : BinaryExpression<DivisionOperator, Operand, Operand> {
-    override func evaluated(in env: Environment) -> Operand {
-        let lhs = left.evaluated(in: env), rhs = right.evaluated(in: env)
+    override fileprivate func evaluated(in env: Environment) -> Operand {
+        let lhs = left.result(in: env), rhs = right.result(in: env)
         switch `operator` {
         case .divide: return lhs / rhs
         case .remainder: return lhs.truncatingRemainder(dividingBy: rhs)
@@ -126,8 +157,8 @@ class FloatingPointDivisionExpression<Operand : FloatingPoint>
 
 class ComparisonExpression<Operand : Comparable>
     : BinaryExpression<ComparisonOperator, Operand, Bool> {
-    override func evaluated(in env: Environment) -> Bool {
-        let lhs = left.evaluated(in: env), rhs = right.evaluated(in: env)
+    override fileprivate func evaluated(in env: Environment) -> Bool {
+        let lhs = left.result(in: env), rhs = right.result(in: env)
         let op: Combiner
         switch `operator` {
         case .equal: op = (==)
@@ -142,8 +173,8 @@ class ComparisonExpression<Operand : Comparable>
 }
 
 class BooleanExpression : BinaryExpression<BooleanOperator, Bool, Bool> {
-    override func evaluated(in env: Environment) -> Bool {
-        let lhs = left.evaluated(in: env), rhs = right.evaluated(in: env)
+    override fileprivate func evaluated(in env: Environment) -> Bool {
+        let lhs = left.result(in: env), rhs = right.result(in: env)
         switch `operator` {
         case .and: return lhs && rhs
         case .or: return lhs || rhs
@@ -158,8 +189,12 @@ class NegateExpression<Operand : SignedNumeric> : Expression<Operand> {
         self.operand = operand
     }
 
-    override func evaluated(in env: Environment) -> Operand {
-        return -operand.evaluated(in: env)
+    override var shouldInvalidateCache: Bool {
+        return operand.shouldInvalidateCache
+    }
+
+    override fileprivate func evaluated(in env: Environment) -> Operand {
+        return -operand.result(in: env)
     }
 }
 
@@ -170,8 +205,12 @@ class LogicalNotExpression : Expression<Bool> {
         self.operand = operand
     }
 
-    override func evaluated(in env: Environment) -> Bool {
-        return !operand.evaluated(in: env)
+    override var shouldInvalidateCache: Bool {
+        return operand.shouldInvalidateCache
+    }
+
+    override fileprivate func evaluated(in env: Environment) -> Bool {
+        return !operand.result(in: env)
     }
 }
 
@@ -185,7 +224,11 @@ class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return> {
         self.location = location
     }
 
-    override func evaluated(in env: Environment) -> (Argument) -> Return {
+    override var shouldInvalidateCache: Bool {
+        return false
+    }
+
+    override fileprivate func evaluated(in env: Environment) -> (Argument) -> Return {
         let closure: Closure<Return> =
             Environment.closure(at: location) ?? {
                 let sym = Environment.makeSymbol()
@@ -198,7 +241,7 @@ class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return> {
         return { arg in
             let newEnv = Environment(parent: env)
             newEnv.insert(arg, for: closure.formal)
-            return closure.body.evaluated(in: newEnv)
+            return closure.body.result(in: newEnv)
         }
     }
 }
@@ -213,9 +256,13 @@ class ApplyExpression<Argument, Return> : Expression<Return> {
         self.argument = argument
     }
 
-    override func evaluated(in env: Environment) -> Return {
-        let argVal = argument.evaluated(in: env)
-        let cloVal = closure.evaluated(in: env)
+    override var shouldInvalidateCache: Bool {
+        return argument.shouldInvalidateCache
+    }
+
+    override fileprivate func evaluated(in env: Environment) -> Return {
+        let argVal = argument.result(in: env)
+        let cloVal = closure.result(in: env)
         return cloVal(argVal)
     }
 }
@@ -233,10 +280,14 @@ class IfExpression<Result> : Expression<Result> {
         self.`else` = `else`
     }
 
-    override func evaluated(in env: Environment) -> Result {
-        return condition.evaluated(in: env)
-            ? then().evaluated(in: env)
-            : `else`().evaluated(in: env)
+    override var shouldInvalidateCache: Bool {
+        return condition.shouldInvalidateCache
+    }
+
+    override fileprivate func evaluated(in env: Environment) -> Result {
+        return condition.result(in: env)
+            ? then().result(in: env)
+            : `else`().result(in: env)
     }
 }
 
@@ -251,11 +302,18 @@ class CondExpression<Result> : Expression<Result> {
         self.`else` = `else`
     }
 
-    override func evaluated(in env: Environment) -> Result {
-        for (cond, then) in clauses where cond.evaluated(in: env) {
-            return then().evaluated(in: env)
+    override var shouldInvalidateCache: Bool {
+        for (exp, _) in clauses where exp.shouldInvalidateCache {
+            return true
         }
-        return `else`().evaluated(in: env)
+        return false
+    }
+
+    override fileprivate func evaluated(in env: Environment) -> Result {
+        for (cond, then) in clauses where cond.result(in: env) {
+            return then().result(in: env)
+        }
+        return `else`().result(in: env)
     }
 }
 
@@ -269,9 +327,13 @@ class MapExpression<Argument, MapResult> : Expression<[MapResult]> {
         self.array = array
     }
 
-    override func evaluated(in env: Environment) -> [MapResult] {
-        let cloVal = functor.evaluated(in: env)
-        let arrVal = array.evaluated(in: env)
+    override var shouldInvalidateCache: Bool {
+        return functor.shouldInvalidateCache || array.shouldInvalidateCache
+    }
+
+    override fileprivate func evaluated(in env: Environment) -> [MapResult] {
+        let cloVal = functor.result(in: env)
+        let arrVal = array.result(in: env)
         return arrVal.map { cloVal($0) }
     }
 }
@@ -289,11 +351,17 @@ class ReduceExpression<Argument, Result> : Expression<Result> {
         self.array = array
     }
 
-    override func evaluated(in env: Environment) -> Result {
+    override var shouldInvalidateCache: Bool {
+        return combiner.shouldInvalidateCache
+            || initial.shouldInvalidateCache
+            || array.shouldInvalidateCache
+    }
+
+    override fileprivate func evaluated(in env: Environment) -> Result {
         // TODO: refactor after multiple args are supported
-        let cloVal = combiner.evaluated(in: env)
-        var accVal = initial.evaluated(in: env)
-        let arrVal = array.evaluated(in: env)
+        let cloVal = combiner.result(in: env)
+        var accVal = initial.result(in: env)
+        let arrVal = array.result(in: env)
         for v in arrVal {
             accVal = cloVal(accVal, v)
         }
@@ -310,8 +378,12 @@ class TupleExpression<First, Second> : Expression<(First, Second)> {
         self.second = second
     }
 
-    override func evaluated(in env: Environment) -> (First, Second) {
-        return (first.evaluated(in: env), second.evaluated(in: env))
+    override var shouldInvalidateCache: Bool {
+        return first.shouldInvalidateCache || second.shouldInvalidateCache
+    }
+
+    override fileprivate func evaluated(in env: Environment) -> (First, Second) {
+        return (first.result(in: env), second.result(in: env))
     }
 }
 
@@ -322,8 +394,12 @@ class TupleExtractFirstExpression<First, Second> : Expression<First> {
         self.tuple = tuple
     }
 
-    override func evaluated(in env: Environment) -> First {
-        return tuple.evaluated(in: env).0
+    override var shouldInvalidateCache: Bool {
+        return tuple.shouldInvalidateCache
+    }
+
+    override fileprivate func evaluated(in env: Environment) -> First {
+        return tuple.result(in: env).0
     }
 }
 
@@ -334,7 +410,11 @@ class TupleExtractSecondExpression<First, Second> : Expression<Second> {
         self.tuple = tuple
     }
 
-    override func evaluated(in env: Environment) -> Second {
-        return tuple.evaluated(in: env).1
+    override var shouldInvalidateCache: Bool {
+        return tuple.shouldInvalidateCache
+    }
+
+    override fileprivate func evaluated(in env: Environment) -> Second {
+        return tuple.result(in: env).1
     }
 }
