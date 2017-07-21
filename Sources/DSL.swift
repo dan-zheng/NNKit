@@ -17,6 +17,8 @@
 //  limitations under the License.
 //
 
+// MARK: - Evaluation
+
 public typealias Rep<Result> = Expression<Result>
 
 public extension Rep {
@@ -24,6 +26,8 @@ public extension Rep {
         return evaluated(in: Environment(parent: nil))
     }
 }
+
+// MARK: - Constant staging
 
 prefix operator ^
 
@@ -71,6 +75,8 @@ public prefix func ^ (_ value: [Float]) -> Rep<[Float]> {
 public prefix func ^ <T : Stageable>(_ value: [T]) -> Rep<[T]> {
     return ConstantExpression(value: value)
 }
+
+// MARK: - Arithmetics
 
 public extension Rep where Result : Numeric {
     static func + (lhs: Rep<Result>, rhs: Rep<Result>) -> Rep<Result> {
@@ -159,12 +165,284 @@ public extension Rep where Result : FloatingPoint {
     }
 }
 
+// MARK: - Tuples
+
+public func tuple<A, B>(_ a: Rep<A>, _ b: Rep<B>) -> Rep<(A, B)> {
+    return TupleExpression(a, b)
+}
+
+public func tuple<A, B, C>(
+    _ a: Rep<A>, _ b: Rep<B>, _ c: Rep<C>) -> Rep<(A, (B, C))> {
+    return TupleExpression(a, TupleExpression(b, c))
+}
+
+public func tuple<A, B, C, D>(
+    _ a: Rep<A>, _ b: Rep<B>, _ c: Rep<C>, _ d: Rep<D>
+    ) -> Rep<(A, (B, (C, D)))> {
+    return TupleExpression(a, TupleExpression(b, TupleExpression(c, d)))
+}
+
+public func tuple<A, B, C, D, E>(
+    _ a: Rep<A>, _ b: Rep<B>, _ c: Rep<C>, _ d: Rep<D>, _ e: Rep<E>
+    ) -> Rep<(A, (B, (C, (D, E))))> {
+    return TupleExpression(
+        a, TupleExpression(b, TupleExpression(c, TupleExpression(d, e))))
+}
+
+public func tuple<A, B, C, D, E, F>(
+    _ a: Rep<A>, _ b: Rep<B>, _ c: Rep<C>, _ d: Rep<D>, _ e: Rep<E>,
+    _ f: Rep<F>) -> Rep<(A, (B, (C, (D, (E, F)))))> {
+    return TupleExpression(
+        a, TupleExpression(
+            b, TupleExpression(c, TupleExpression(d, TupleExpression(e, f)))))
+}
+
+public func tuple<A, B, C, D, E, F, G>(
+    _ a: Rep<A>, _ b: Rep<B>, _ c: Rep<C>, _ d: Rep<D>, _ e: Rep<E>,
+    _ f: Rep<F>, _ g: Rep<G>) -> Rep<(A, (B, (C, (D, (E, (F, G))))))> {
+    return TupleExpression(
+        a, TupleExpression(
+            b, TupleExpression(
+                c, TupleExpression(
+                    d, TupleExpression(e, TupleExpression(f, g))))))
+}
+
+public func tuple<A, B, C, D, E, F, G, H>(
+    _ a: Rep<A>, _ b: Rep<B>, _ c: Rep<C>, _ d: Rep<D>, _ e: Rep<E>,
+    _ f: Rep<F>, _ g: Rep<G>, _ h: Rep<H>
+    ) -> Rep<(A, (B, (C, (D, (E, (F, (G, H)))))))> {
+    return TupleExpression(
+        a, TupleExpression(
+            b, TupleExpression(
+                c, TupleExpression(
+                    d, TupleExpression(
+                        e, TupleExpression(f, TupleExpression(g, h)))))))
+}
+
+public func tuple<A, B, C, D, E, F, G, H, I>(
+    _ a: Rep<A>, _ b: Rep<B>, _ c: Rep<C>, _ d: Rep<D>, _ e: Rep<E>,
+    _ f: Rep<F>, _ g: Rep<G>, _ h: Rep<H>, _ i: Rep<I>
+    ) -> Rep<(A, (B, (C, (D, (E, (F, (G, (H, I))))))))> {
+    return TupleExpression(
+        a, TupleExpression(
+            b, TupleExpression(
+                c, TupleExpression(
+                    d, TupleExpression(
+                        e, TupleExpression(
+                            f, TupleExpression(g, TupleExpression(h, i))))))))
+}
+
+public func tuple<A, B, C, D, E, F, G, H, I, J>(
+    _ a: Rep<A>, _ b: Rep<B>, _ c: Rep<C>, _ d: Rep<D>, _ e: Rep<E>,
+    _ f: Rep<F>, _ g: Rep<G>, _ h: Rep<H>, _ i: Rep<I>, _ j: Rep<J>
+    ) -> Rep<(A, (B, (C, (D, (E, (F, (G, (H, (I, J)))))))))> {
+    return TupleExpression(
+        a, TupleExpression(
+            b, TupleExpression(
+                c, TupleExpression(
+                    d, TupleExpression(
+                        e, TupleExpression(
+                            f, TupleExpression(
+                                g, TupleExpression(
+                                    h, TupleExpression(i, j)))))))))
+}
+
+prefix operator *
+
+public prefix func *<A, B>(_ x: Rep<(A, B)>) -> (Rep<A>, Rep<B>) {
+    return (TupleExtractFirstExpression(x), TupleExtractSecondExpression(x))
+}
+
+public prefix func *<A, B, C>(
+    _ x: Rep<(A, (B, C))>) -> (Rep<A>, Rep<B>, Rep<C>) {
+    let (a, x) = *x
+    let (b, c) = *x
+    return (a, b, c)
+}
+
+public prefix func *<A, B, C, D>(
+    _ x: Rep<(A, (B, (C, D)))>) -> (Rep<A>, Rep<B>, Rep<C>, Rep<D>) {
+    let (a, b, x) = *x
+    let (c, d) = *x
+    return (a, b, c, d)
+}
+
+public prefix func *<A, B, C, D, E>(
+    _ x: Rep<(A, (B, (C, (D, E))))>
+    ) -> (Rep<A>, Rep<B>, Rep<C>, Rep<D>, Rep<E>) {
+    let (a, b, c, x) = *x
+    let (d, e) = *x
+    return (a, b, c, d, e)
+}
+
+public prefix func *<A, B, C, D, E, F>(
+    _ x: Rep<(A, (B, (C, (D, (E, F)))))>
+    ) -> (Rep<A>, Rep<B>, Rep<C>, Rep<D>, Rep<E>, Rep<F>) {
+    let (a, b, c, d, x) = *x
+    let (e, f) = *x
+    return (a, b, c, d, e, f)
+}
+
+public prefix func *<A, B, C, D, E, F, G>(
+    _ x: Rep<(A, (B, (C, (D, (E, (F, G))))))>
+    ) -> (Rep<A>, Rep<B>, Rep<C>, Rep<D>, Rep<E>, Rep<F>, Rep<G>) {
+    let (a, b, c, d, e, x) = *x
+    let (f, g) = *x
+    return (a, b, c, d, e, f, g)
+}
+
+public prefix func *<A, B, C, D, E, F, G, H>(
+    _ x: Rep<(A, (B, (C, (D, (E, (F, (G, H)))))))>
+    ) -> (Rep<A>, Rep<B>, Rep<C>, Rep<D>, Rep<E>, Rep<F>, Rep<G>, Rep<H>) {
+    let (a, b, c, d, e, f, x) = *x
+    let (g, h) = *x
+    return (a, b, c, d, e, f, g, h)
+}
+
+public prefix func *<A, B, C, D, E, F, G, H, I>(
+    _ x: Rep<(A, (B, (C, (D, (E, (F, (G, (H, I))))))))>
+    ) -> (Rep<A>, Rep<B>, Rep<C>, Rep<D>, Rep<E>,
+          Rep<F>, Rep<G>, Rep<H>, Rep<I>)
+{
+    let (a, b, c, d, e, f, g, x) = *x
+    let (h, i) = *x
+    return (a, b, c, d, e, f, g, h, i)
+}
+
+public prefix func *<A, B, C, D, E, F, G, H, I, J>(
+    _ x: Rep<(A, (B, (C, (D, (E, (F, (G, (H, (I, J)))))))))>
+    ) -> (Rep<A>, Rep<B>, Rep<C>, Rep<D>, Rep<E>,
+          Rep<F>, Rep<G>, Rep<H>, Rep<I>, Rep<J>)
+{
+    let (a, b, c, d, e, f, g, h, x) = *x
+    let (i, j) = *x
+    return (a, b, c, d, e, f, g, h, i, j)
+}
+
+// MARK: - Lambda abstraction
+
 public func lambda<Argument, Result>(
     file: StaticString = #file, line: UInt = #line, column: UInt = #column,
-    _ closure: @escaping (Rep<Argument>) -> Rep<Result>)
-    -> Rep<(Argument) -> Result> {
+    _ closure: @escaping (Rep<Argument>) -> Rep<Result>
+    ) -> Rep<(Argument) -> Result> {
     let loc = SourceLocation(file: file, line: line, column: column)
     return LambdaExpression(closure: closure, location: loc)
+}
+
+public func lambda<A, B, Result>(
+    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    _ closure: @escaping (Rep<A>, Rep<B>) -> Rep<Result>
+    ) -> Rep<(A, B) -> Result> {
+    let loc = SourceLocation(file: file, line: line, column: column)
+    func f(_ x: Rep<(A, B)>) -> Rep<Result> {
+        let (a, b) = *x
+        return closure(a, b)
+    }
+    return LambdaExpression(closure: f, location: loc)
+}
+
+public func lambda<A, B, C, Result>(
+    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    _ closure: @escaping (Rep<A>, Rep<B>, Rep<C>) -> Rep<Result>
+    ) -> Rep<(A, (B, C)) -> Result> {
+    let loc = SourceLocation(file: file, line: line, column: column)
+    func f(_ x: Rep<(A, (B, C))>) -> Rep<Result> {
+        let (a, b, c) = *x
+        return closure(a, b, c)
+    }
+    return LambdaExpression(closure: f, location: loc)
+}
+
+public func lambda<A, B, C, D, Result>(
+    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    _ closure: @escaping (Rep<A>, Rep<B>, Rep<C>, Rep<D>) -> Rep<Result>
+    ) -> Rep<(A, (B, (C, D))) -> Result> {
+    let loc = SourceLocation(file: file, line: line, column: column)
+    func f(_ x: Rep<(A, (B, (C, D)))>) -> Rep<Result> {
+        let (a, b, c, d) = *x
+        return closure(a, b, c, d)
+    }
+    return LambdaExpression(closure: f, location: loc)
+}
+
+public func lambda<A, B, C, D, E, Result>(
+    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    _ closure: @escaping (Rep<A>, Rep<B>, Rep<C>, Rep<D>, Rep<E>) -> Rep<Result>
+    ) -> Rep<(A, (B, (C, (D, E)))) -> Result> {
+    let loc = SourceLocation(file: file, line: line, column: column)
+    func f(_ x: Rep<(A, (B, (C, (D, E))))>) -> Rep<Result> {
+        let (a, b, c, d, e) = *x
+        return closure(a, b, c, d, e)
+    }
+    return LambdaExpression(closure: f, location: loc)
+}
+
+public func lambda<A, B, C, D, E, F, Result>(
+    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    _ closure: @escaping (Rep<A>, Rep<B>, Rep<C>,
+                          Rep<D>, Rep<E>, Rep<F>) -> Rep<Result>
+    ) -> Rep<(A, (B, (C, (D, (E, F))))) -> Result> {
+    let loc = SourceLocation(file: file, line: line, column: column)
+    func f(_ x: Rep<(A, (B, (C, (D, (E, F)))))>) -> Rep<Result> {
+        let (a, b, c, d, e, f) = *x
+        return closure(a, b, c, d, e, f)
+    }
+    return LambdaExpression(closure: f, location: loc)
+}
+
+public func lambda<A, B, C, D, E, F, G, Result>(
+    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    _ closure: @escaping (Rep<A>, Rep<B>, Rep<C>, Rep<D>,
+                          Rep<E>, Rep<F>, Rep<G>) -> Rep<Result>
+    ) -> Rep<(A, (B, (C, (D, (E, (F, G)))))) -> Result> {
+    let loc = SourceLocation(file: file, line: line, column: column)
+    func f(_ x: Rep<(A, (B, (C, (D, (E, (F, G))))))>) -> Rep<Result> {
+        let (a, b, c, d, e, f, g) = *x
+        return closure(a, b, c, d, e, f, g)
+    }
+    return LambdaExpression(closure: f, location: loc)
+}
+
+public func lambda<A, B, C, D, E, F, G, H, Result>(
+    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    _ closure: @escaping (Rep<A>, Rep<B>, Rep<C>, Rep<D>,
+                          Rep<E>, Rep<F>, Rep<G>, Rep<H>) -> Rep<Result>
+    ) -> Rep<(A, (B, (C, (D, (E, (F, (G, H))))))) -> Result> {
+    let loc = SourceLocation(file: file, line: line, column: column)
+    func f(_ x: Rep<(A, (B, (C, (D, (E, (F, (G, H)))))))>) -> Rep<Result> {
+        let (a, b, c, d, e, f, g, h) = *x
+        return closure(a, b, c, d, e, f, g, h)
+    }
+    return LambdaExpression(closure: f, location: loc)
+}
+
+public func lambda<A, B, C, D, E, F, G, H, I, Result>(
+    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    _ closure: @escaping (Rep<A>, Rep<B>, Rep<C>, Rep<D>, Rep<E>, Rep<F>,
+                          Rep<G>, Rep<H>, Rep<I>) -> Rep<Result>
+    ) -> Rep<(A, (B, (C, (D, (E, (F, (G, (H, I)))))))) -> Result> {
+    let loc = SourceLocation(file: file, line: line, column: column)
+    func f(_ x: Rep<(A, (B, (C, (D, (E, (F, (G, (H, I))))))))>) -> Rep<Result> {
+        let (a, b, c, d, e, f, g, h, i) = *x
+        return closure(a, b, c, d, e, f, g, h, i)
+    }
+    return LambdaExpression(closure: f, location: loc)
+}
+
+// MARK: - Function application
+
+public func lambda<A, B, C, D, E, F, G, H, I, J, Result>(
+    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    _ closure: @escaping (Rep<A>, Rep<B>, Rep<C>, Rep<D>, Rep<E>, Rep<F>,
+                          Rep<G>, Rep<H>, Rep<I>, Rep<J>) -> Rep<Result>
+    ) -> Rep<(A, (B, (C, (D, (E, (F, (G, (H, (I, J))))))))) -> Result> {
+    let loc = SourceLocation(file: file, line: line, column: column)
+    func f(_ x: Rep<(A, (B, (C, (D, (E, (F, (G, (H, (I, J)))))))))>
+        ) -> Rep<Result> {
+        let (a, b, c, d, e, f, g, h, i, j) = *x
+        return closure(a, b, c, d, e, f, g, h, i, j)
+    }
+    return LambdaExpression(closure: f, location: loc)
 }
 
 public extension Rep {
@@ -174,7 +452,106 @@ public extension Rep {
         return ApplyExpression<Argument, ClosureResult>(closure: self,
                                                         argument: arg)
     }
+
+    subscript<A, B, ClosureResult>(_ a: Rep<A>, _ b: Rep<B>) -> Rep<ClosureResult>
+        where Result == (A, B) -> ClosureResult
+    {
+        return ApplyExpression<(A, B), ClosureResult>(
+            closure: self,
+            argument: tuple(a, b)
+        )
+    }
+
+    subscript<A, B, C, ClosureResult>(_ a: Rep<A>, _ b: Rep<B>,
+                                      _ c: Rep<C>) -> Rep<ClosureResult>
+        where Result == (A, (B, C)) -> ClosureResult
+    {
+        return ApplyExpression<(A, (B, C)), ClosureResult>(
+            closure: self,
+            argument: tuple(a, b, c)
+        )
+    }
+
+    subscript<A, B, C, D, ClosureResult>
+        (_ a: Rep<A>, _ b: Rep<B>, _ c: Rep<C>, _ d: Rep<D>) -> Rep<ClosureResult>
+        where Result == (A, (B, (C, D))) -> ClosureResult
+    {
+        return ApplyExpression<(A, (B, (C, D))), ClosureResult>(
+            closure: self,
+            argument: tuple(a, b, c, d)
+        )
+    }
+
+    subscript<A, B, C, D, E, ClosureResult>
+        (_ a: Rep<A>, _ b: Rep<B>, _ c: Rep<C>, _ d: Rep<D>,
+         _ e: Rep<E>) -> Rep<ClosureResult>
+        where Result == (A, (B, (C, (D, E)))) -> ClosureResult
+    {
+        return ApplyExpression<(A, (B, (C, (D, E)))), ClosureResult>(
+            closure: self,
+            argument: tuple(a, b, c, d, e)
+        )
+    }
+
+    subscript<A, B, C, D, E, F, ClosureResult>
+        (_ a: Rep<A>, _ b: Rep<B>, _ c: Rep<C>, _ d: Rep<D>,
+         _ e: Rep<E>, _ f: Rep<F>) -> Rep<ClosureResult>
+        where Result == (A, (B, (C, (D, (E, F))))) -> ClosureResult
+    {
+        return ApplyExpression<(A, (B, (C, (D, (E, F))))), ClosureResult>(
+            closure: self,
+            argument: tuple(a, b, c, d, e, f)
+        )
+    }
+
+    subscript<A, B, C, D, E, F, G, ClosureResult>
+        (_ a: Rep<A>, _ b: Rep<B>, _ c: Rep<C>, _ d: Rep<D>,
+         _ e: Rep<E>, _ f: Rep<F>, _ g: Rep<G>) -> Rep<ClosureResult>
+        where Result == (A, (B, (C, (D, (E, (F, G)))))) -> ClosureResult
+    {
+        return ApplyExpression<(A, (B, (C, (D, (E, (F, G)))))), ClosureResult>(
+            closure: self,
+            argument: tuple(a, b, c, d, e, f, g)
+        )
+    }
+
+    subscript<A, B, C, D, E, F, G, H, ClosureResult>
+        (_ a: Rep<A>, _ b: Rep<B>, _ c: Rep<C>, _ d: Rep<D>,
+         _ e: Rep<E>, _ f: Rep<F>, _ g: Rep<G>, _ h: Rep<H>) -> Rep<ClosureResult>
+        where Result == (A, (B, (C, (D, (E, (F, (G, H))))))) -> ClosureResult
+    {
+        return ApplyExpression<(A, (B, (C, (D, (E, (F, (G, H))))))), ClosureResult>(
+            closure: self,
+            argument: tuple(a, b, c, d, e, f, g, h)
+        )
+    }
+
+    subscript<A, B, C, D, E, F, G, H, I, ClosureResult>
+        (_ a: Rep<A>, _ b: Rep<B>, _ c: Rep<C>, _ d: Rep<D>,
+         _ e: Rep<E>, _ f: Rep<F>, _ g: Rep<G>, _ h: Rep<H>,
+         _ i: Rep<I>) -> Rep<ClosureResult>
+        where Result == (A, (B, (C, (D, (E, (F, (G, (H, I)))))))) -> ClosureResult
+    {
+        return ApplyExpression<(A, (B, (C, (D, (E, (F, (G, (H, I)))))))), ClosureResult>(
+            closure: self,
+            argument: tuple(a, b, c, d, e, f, g, h, i)
+        )
+    }
+
+    subscript<A, B, C, D, E, F, G, H, I, J, ClosureResult>
+        (_ a: Rep<A>, _ b: Rep<B>, _ c: Rep<C>, _ d: Rep<D>,
+         _ e: Rep<E>, _ f: Rep<F>, _ g: Rep<G>, _ h: Rep<H>,
+         _ i: Rep<I>, _ j :Rep<J>) -> Rep<ClosureResult>
+        where Result == (A, (B, (C, (D, (E, (F, (G, (H, (I, J))))))))) -> ClosureResult
+    {
+        return ApplyExpression<(A, (B, (C, (D, (E, (F, (G, (H, (I, J))))))))), ClosureResult>(
+            closure: self,
+            argument: tuple(a, b, c, d, e, f, g, h, i, j)
+        )
+    }
 }
+
+// MARK: - Control flow
 
 public func `if`<Result>(
     _ condition: Rep<Bool>,
@@ -237,6 +614,8 @@ public func cond<Result>(
                           else: `else`)
 }
 
+// MARK: - Higher-order functions
+
 public extension Rep {
     func map<Argument, MapResult>(_ fn: Rep<(Argument) -> MapResult>) -> Rep<[MapResult]>
         where Result == [Argument] {
@@ -244,23 +623,27 @@ public extension Rep {
     }
 
     func map<Argument, MapResult>(
+        file: StaticString = #file, line: UInt = #line, column: UInt = #column,
         _ fn: @escaping (Rep<Argument>) -> Rep<MapResult>) -> Rep<[MapResult]>
-        where Result == [Argument] {
-        return map(lambda(fn))
+        where Result == [Argument]
+    {
+        return map(lambda(file: file, line: line, column: column, fn))
     }
 
-    func reduce<Argument, ReductionResult>(
-        _ initial: Rep<ReductionResult>,
-        _ combiner: Rep<((ReductionResult, Argument)) -> ReductionResult>) -> Rep<ReductionResult>
-        where Result == [Argument] {
+    func reduce<A, R>(
+        _ initial: Rep<R>,
+        _ combiner: Rep<(R, A) -> R>
+        ) -> Rep<R> where Result == [A] {
         return ReduceExpression(initial: initial, combiner: combiner,
                                 array: self)
     }
 
-    func reduce<Argument, ReductionResult>(
-        _ initial: Rep<ReductionResult>,
-        _ combiner: @escaping (Rep<(ReductionResult, Argument)>) -> Rep<ReductionResult>) -> Rep<ReductionResult>
-        where Result == [Argument] {
-        return reduce(initial, lambda(combiner))
+    func reduce<A, R>(
+        file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+        _ initial: Rep<R>,
+        _ combiner: @escaping (Rep<R>, Rep<A>) -> Rep<R>
+        ) -> Rep<R> where Result == [A] {
+        return reduce(initial,
+                      lambda(file: file, line: line, column: column, combiner))
     }
 }
