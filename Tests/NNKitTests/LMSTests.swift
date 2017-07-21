@@ -65,6 +65,22 @@ class LMSTests : XCTestCase {
         XCTAssertEqual(prod2.!, 1230)
     }
 
+    func testCond() {
+        func fib(_ n: Rep<Int>) -> Rep<Int> {
+            let next = lambda { n in fib(n - 1) + fib(n - 2) }
+            return cond(n == 0, ^0,
+                        n == 1, ^1,
+                        n > 1, next[n],
+                        else: next[n])
+        }
+        let f5 = fib(^5)
+        XCTAssertEqual(f5.!, 5)
+        XCTAssertEqual(f5.!, 5)
+        let f12 = lambda(fib)[f5 + 7]
+        XCTAssertEqual(f12.!, 144)
+        XCTAssertEqual(f12.!, 144)
+    }
+
     func testHOF() {
         let array = ^[1.0, 2.0, 3.0, 4.0]
         let sum = array.reduce(0, +)

@@ -53,7 +53,7 @@ public class Expression<Result> : Staged {
 }
 
 final class ConstantExpression<Result> : Expression<Result> {
-    var value: Result
+    let value: Result
 
     init(value: Result) {
         self.value = value
@@ -70,7 +70,7 @@ final class ConstantExpression<Result> : Expression<Result> {
 }
 
 final class SymbolExpression<Result> : Expression<Result> {
-    var value: UInt
+    let value: UInt
 
     init(value: UInt) {
         self.value = value
@@ -108,9 +108,9 @@ enum DivisionOperator {
 
 class BinaryExpression<Operator, Operand, Result> : Expression<Result> {
     typealias Combiner = (Operand, Operand) -> Result
-    var `operator`: Operator
-    var left: Expression<Operand>
-    var right: Expression<Operand>
+    let `operator`: Operator
+    let left: Expression<Operand>
+    let right: Expression<Operand>
 
     override func containsSymbol(otherThan sym: UInt) -> Bool {
         return left.containsSymbol(otherThan: sym)
@@ -193,7 +193,7 @@ final class BooleanExpression : BinaryExpression<BooleanOperator, Bool, Bool> {
 }
 
 final class NegateExpression<Operand : SignedNumeric> : Expression<Operand> {
-    var operand: Expression<Operand>
+    let operand: Expression<Operand>
 
     init(operand: Expression<Operand>) {
         self.operand = operand
@@ -210,7 +210,7 @@ final class NegateExpression<Operand : SignedNumeric> : Expression<Operand> {
 }
 
 final class LogicalNotExpression : Expression<Bool> {
-    var operand: Expression<Bool>
+    let operand: Expression<Bool>
 
     init(operand: Expression<Bool>) {
         self.operand = operand
@@ -228,8 +228,8 @@ final class LogicalNotExpression : Expression<Bool> {
 
 final class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return> {
     typealias MetaClosure = (Expression<Argument>) -> Expression<Return>
-    var metaClosure: MetaClosure
-    var location: SourceLocation
+    let metaClosure: MetaClosure
+    let location: SourceLocation
 
     init(closure: @escaping MetaClosure, location: SourceLocation) {
         self.metaClosure = closure
@@ -269,8 +269,8 @@ final class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return
 
 final class ApplyExpression<Argument, Return> : Expression<Return> {
     typealias Closure = Expression<(Argument) -> Return>
-    var closure: Closure
-    var argument: Expression<Argument>
+    let closure: Closure
+    let argument: Expression<Argument>
 
     init(closure: Closure, argument: Expression<Argument>) {
         self.closure = closure
@@ -292,39 +292,61 @@ final class ApplyExpression<Argument, Return> : Expression<Return> {
 }
 
 final class IfExpression<Result> : Expression<Result> {
-    var condition: Expression<Bool>
-    var then: () -> Expression<Result>
-    var `else`: () -> Expression<Result>
+    let condition: Expression<Bool>
+    private let makeThen: () -> Expression<Result>
+    private let makeElse: () -> Expression<Result>
+    lazy var then: Expression<Result> = self.makeThen()
+    lazy var `else`: Expression<Result> = self.makeElse()
 
     init(condition: Expression<Bool>,
          then: @autoclosure @escaping () -> Expression<Result>,
          else: @autoclosure @escaping () -> Expression<Result>) {
         self.condition = condition
-        self.then = then
-        self.`else` = `else`
+        self.makeThen = then
+        self.makeElse = `else`
         super.init(shouldInvalidateCache: condition.shouldInvalidateCache)
     }
 
     override func containsSymbol(otherThan sym: UInt) -> Bool {
         return condition.containsSymbol(otherThan: sym)
+            || then.containsSymbol(otherThan: sym)
+            || `else`.containsSymbol(otherThan: sym)
     }
 
     fileprivate override func evaluated(in env: Environment) -> Result {
         return condition.result(in: env)
-            ? then().result(in: env)
-            : `else`().result(in: env)
+            ? then.result(in: env)
+            : `else`.result(in: env)
     }
 }
 
 final class CondExpression<Result> : Expression<Result> {
-    typealias Clause = (Expression<Bool>, () -> Expression<Result>)
-    var clauses: [Clause]
-    var `else`: () -> Expression<Result>
+    enum ThenClause {
+        case uninitialized(() -> Expression<Result>)
+        case initialized(Expression<Result>)
 
-    init(clauses: [Clause],
+        var initialized: Expression<Result> {
+            mutating get {
+                switch self {
+                case let .initialized(exp):
+                    return exp
+                case let .uninitialized(makeExp):
+                    let exp = makeExp()
+                    self = .initialized(exp)
+                    return exp
+                }
+            }
+        }
+    }
+    typealias Clause = (Expression<Bool>, ThenClause)
+    var clauses: [Clause]
+    private let makeElse: () -> Expression<Result>
+    lazy var `else`: Expression<Result> = self.makeElse()
+
+    init(clauses: [(Expression<Bool>, () -> Expression<Result>)],
          `else`: @autoclosure @escaping () -> Expression<Result>) {
-        self.clauses = clauses
-        self.`else` = `else`
+        self.clauses = clauses.map { ($0, .uninitialized($1)) }
+        self.makeElse = `else`
         var shouldInvalidateCache: Bool = false
         for (exp, _) in clauses where exp.shouldInvalidateCache {
             shouldInvalidateCache = true
@@ -340,10 +362,10 @@ final class CondExpression<Result> : Expression<Result> {
     }
 
     fileprivate override func evaluated(in env: Environment) -> Result {
-        for (cond, then) in clauses where cond.result(in: env) {
-            return then().result(in: env)
+        for (i, (cond, _)) in clauses.enumerated() where cond.result(in: env) {
+            return clauses[i].1.initialized.result(in: env)
         }
-        return `else`().result(in: env)
+        return `else`.result(in: env)
     }
 }
 
