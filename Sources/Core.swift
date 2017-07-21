@@ -277,7 +277,7 @@ class MapExpression<Argument, MapResult> : Expression<[MapResult]> {
 }
 
 class ReduceExpression<Argument, Result> : Expression<Result> {
-    typealias Combiner = Expression<((Result, Argument)) -> Result>
+    typealias Combiner = Expression<(Result, Argument) -> Result>
     var combiner: Combiner
     var initial: Expression<Result>
     var array: Expression<[Argument]>
@@ -295,8 +295,46 @@ class ReduceExpression<Argument, Result> : Expression<Result> {
         var accVal = initial.evaluated(in: env)
         let arrVal = array.evaluated(in: env)
         for v in arrVal {
-            accVal = cloVal((accVal, v))
+            accVal = cloVal(accVal, v)
         }
         return accVal
+    }
+}
+
+class TupleExpression<First, Second> : Expression<(First, Second)> {
+    let first: Expression<First>
+    let second: Expression<Second>
+
+    init(_ first: Expression<First>, _ second: Expression<Second>) {
+        self.first = first
+        self.second = second
+    }
+
+    override func evaluated(in env: Environment) -> (First, Second) {
+        return (first.evaluated(in: env), second.evaluated(in: env))
+    }
+}
+
+class TupleExtractFirstExpression<First, Second> : Expression<First> {
+    let tuple: Expression<(First, Second)>
+
+    init(_ tuple: Expression<(First, Second)>) {
+        self.tuple = tuple
+    }
+
+    override func evaluated(in env: Environment) -> First {
+        return tuple.evaluated(in: env).0
+    }
+}
+
+class TupleExtractSecondExpression<First, Second> : Expression<Second> {
+    let tuple: Expression<(First, Second)>
+
+    init(_ tuple: Expression<(First, Second)>) {
+        self.tuple = tuple
+    }
+
+    override func evaluated(in env: Environment) -> Second {
+        return tuple.evaluated(in: env).1
     }
 }
