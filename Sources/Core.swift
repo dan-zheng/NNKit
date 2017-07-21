@@ -371,8 +371,8 @@ final class CondExpression<Result> : Expression<Result> {
 
 final class MapExpression<Argument, MapResult> : Expression<[MapResult]> {
     typealias Functor = Expression<(Argument) -> MapResult>
-    var functor: Functor
-    var array: Expression<[Argument]>
+    let functor: Functor
+    let array: Expression<[Argument]>
 
     init(functor: Functor, array: Expression<[Argument]>) {
         self.functor = functor
@@ -395,9 +395,9 @@ final class MapExpression<Argument, MapResult> : Expression<[MapResult]> {
 
 final class ReduceExpression<Argument, Result> : Expression<Result> {
     typealias Combiner = Expression<(Result, Argument) -> Result>
-    var combiner: Combiner
-    var initial: Expression<Result>
-    var array: Expression<[Argument]>
+    let combiner: Combiner
+    let initial: Expression<Result>
+    let array: Expression<[Argument]>
 
     init(initial: Expression<Result>, combiner: Combiner,
          array: Expression<[Argument]>) {
