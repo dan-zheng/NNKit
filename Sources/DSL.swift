@@ -21,9 +21,15 @@
 
 public typealias Rep<Result> = Expression<Result>
 
+postfix operator .!
+
 public extension Rep {
     func evaluated() -> Result {
         return evaluated(in: Environment(parent: nil))
+    }
+
+    postfix static func .!(x: Rep<Result>) -> Result {
+        return x.evaluated()
     }
 }
 
