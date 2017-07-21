@@ -119,11 +119,11 @@ public extension Rep where Result : Numeric & Stageable {
     }
 
     static func * (lhs: Result, rhs: Rep<Result>) -> Rep<Result> {
-        return ^lhs - rhs
+        return ^lhs * rhs
     }
 
     static func * (lhs: Rep<Result>, rhs: Result) -> Rep<Result> {
-        return lhs - ^rhs
+        return lhs * ^rhs
     }
 }
 
@@ -184,11 +184,11 @@ public extension Rep where Result : Comparable & Stageable {
     }
 
     static func < (lhs: Result, rhs: Rep<Result>) -> Rep<Bool> {
-        return ^lhs > rhs
+        return ^lhs < rhs
     }
 
     static func < (lhs: Rep<Result>, rhs: Result) -> Rep<Bool> {
-        return lhs > ^rhs
+        return lhs < ^rhs
     }
 
     static func <= (lhs: Result, rhs: Rep<Result>) -> Rep<Bool> {
@@ -276,11 +276,11 @@ public extension Rep where Result : BinaryInteger & Stageable {
     }
 
     static func % (lhs: Result, rhs: Rep<Result>) -> Rep<Result> {
-        return ^lhs / rhs
+        return ^lhs % rhs
     }
 
     static func % (lhs: Rep<Result>, rhs: Result) -> Rep<Result> {
-        return lhs / ^rhs
+        return lhs % ^rhs
     }
 }
 
@@ -309,11 +309,11 @@ public extension Rep where Result : FloatingPoint & Stageable {
     }
 
     static func % (lhs: Result, rhs: Rep<Result>) -> Rep<Result> {
-        return ^lhs / rhs
+        return ^lhs % rhs
     }
 
     static func % (lhs: Rep<Result>, rhs: Result) -> Rep<Result> {
-        return lhs / ^rhs
+        return lhs % ^rhs
     }
 }
 
