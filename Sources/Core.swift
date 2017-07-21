@@ -68,6 +68,10 @@ enum BooleanOperator {
     case and, or
 }
 
+enum DivisionOperator {
+    case divide, remainder
+}
+
 class BinaryExpression<Operator, Operand, Result> : Expression<Result> {
     typealias Combiner = (Operand, Operand) -> Result
     var `operator`: Operator
@@ -93,6 +97,30 @@ class ArithmeticExpression<Operand : Numeric>
         case .multiply: op = (*)
         }
         return op(lhs, rhs)
+    }
+}
+
+class IntegerDivisionExpresison<Operand : BinaryInteger>
+    : BinaryExpression<DivisionOperator, Operand, Operand> {
+    override func evaluated(in env: Environment) -> Operand {
+        let lhs = left.evaluated(in: env), rhs = right.evaluated(in: env)
+        let op: Combiner
+        switch `operator` {
+        case .divide: op = (/)
+        case .remainder: op = (%)
+        }
+        return op(lhs, rhs)
+    }
+}
+
+class FloatingPointDivisionExpression<Operand : FloatingPoint>
+    : BinaryExpression<DivisionOperator, Operand, Operand> {
+    override func evaluated(in env: Environment) -> Operand {
+        let lhs = left.evaluated(in: env), rhs = right.evaluated(in: env)
+        switch `operator` {
+        case .divide: return lhs / rhs
+        case .remainder: return lhs.truncatingRemainder(dividingBy: rhs)
+        }
     }
 }
 

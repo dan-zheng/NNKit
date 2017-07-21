@@ -135,6 +135,30 @@ public extension Rep where Result == Bool {
     }
 }
 
+public extension Rep where Result : BinaryInteger {
+    static func / (lhs: Rep<Result>, rhs: Rep<Result>) -> Rep<Result> {
+        return IntegerDivisionExpresison(operator: .divide,
+                                         left: lhs, right: rhs)
+    }
+
+    static func % (lhs: Rep<Result>, rhs: Rep<Result>) -> Rep<Result> {
+        return IntegerDivisionExpresison(operator: .remainder,
+                                         left: lhs, right: rhs)
+    }
+}
+
+public extension Rep where Result : FloatingPoint {
+    static func / (lhs: Rep<Result>, rhs: Rep<Result>) -> Rep<Result> {
+        return FloatingPointDivisionExpression(operator: .divide,
+                                               left: lhs, right: rhs)
+    }
+
+    static func % (lhs: Rep<Result>, rhs: Rep<Result>) -> Rep<Result> {
+        return FloatingPointDivisionExpression(operator: .remainder,
+                                               left: lhs, right: rhs)
+    }
+}
+
 public func lambda<Argument, Result>(
     file: StaticString = #file, line: UInt = #line, column: UInt = #column,
     _ closure: @escaping (Rep<Argument>) -> Rep<Result>) -> Rep<(Argument) -> Result> {
