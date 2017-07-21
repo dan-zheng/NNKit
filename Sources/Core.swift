@@ -25,9 +25,14 @@ protocol Staged {
 public class Expression<Result> : Staged {
     final var cachedResult: Result? = nil
 
+    /// Subclasses should decide whether should cache should be invalidated
     var shouldInvalidateCache: Bool {
         fatalError("Oh no!")
     }
+
+    /// One-time initialized property
+    private final lazy var _shouldInvalidateCache: Bool =
+        self.shouldInvalidateCache
 
     fileprivate func evaluated(in env: Environment) -> Result {
         fatalError("Oh no!")
@@ -39,11 +44,16 @@ public class Expression<Result> : Staged {
     }
 
     final func result(in env: Environment) -> Result {
-        if shouldInvalidateCache {
+        if _shouldInvalidateCache {
             cachedResult = nil
             return evaluated(in: env)
         }
-        return cachedResult ?? cache(evaluated(in: env))
+        if let result = cachedResult {
+            return result
+        }
+        let result = evaluated(in: env)
+        cachedResult = result
+        return result
     }
 }
 
