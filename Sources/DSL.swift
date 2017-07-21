@@ -92,6 +92,36 @@ public extension Rep where Result : Numeric {
     }
 }
 
+/// Overload for stageable constants
+/// - Todo: To be removed when conditional conformance is supported. That is,
+/// when we can declare `extension Rep : ExpressibleByXXX when Result == XXX`
+public extension Rep where Result : Numeric & Stageable {
+    static func + (lhs: Result, rhs: Rep<Result>) -> Rep<Result> {
+        return ^lhs + rhs
+    }
+
+    static func + (lhs: Rep<Result>, rhs: Result) -> Rep<Result> {
+        return lhs + ^rhs
+    }
+
+    static func - (lhs: Result, rhs: Rep<Result>) -> Rep<Result> {
+        return ^lhs - rhs
+    }
+
+    static func - (lhs: Rep<Result>, rhs: Result) -> Rep<Result> {
+        return lhs - ^rhs
+    }
+
+    static func * (lhs: Result, rhs: Rep<Result>) -> Rep<Result> {
+        return ^lhs - rhs
+    }
+
+    static func * (lhs: Rep<Result>, rhs: Result) -> Rep<Result> {
+        return lhs - ^rhs
+    }
+}
+
+
 public extension Rep where Result : SignedNumeric {
     static prefix func - (operand: Rep<Result>) -> Rep<Result> {
         return NegateExpression(operand: operand)
@@ -127,6 +157,59 @@ public extension Rep where Result : Comparable {
     }
 }
 
+/// Overload for stageable constants
+/// - Todo: To be removed when conditional conformance is supported. That is,
+/// when we can declare `extension Rep : ExpressibleByXXX when Result == XXX`
+public extension Rep where Result : Comparable & Stageable {
+    static func > (lhs: Result, rhs: Rep<Result>) -> Rep<Bool> {
+        return ^lhs > rhs
+    }
+
+    static func > (lhs: Rep<Result>, rhs: Result) -> Rep<Bool> {
+        return lhs > ^rhs
+    }
+
+    static func >= (lhs: Result, rhs: Rep<Result>) -> Rep<Bool> {
+        return ^lhs >= rhs
+    }
+
+    static func >= (lhs: Rep<Result>, rhs: Result) -> Rep<Bool> {
+        return lhs >= ^rhs
+    }
+
+    static func < (lhs: Result, rhs: Rep<Result>) -> Rep<Bool> {
+        return ^lhs > rhs
+    }
+
+    static func < (lhs: Rep<Result>, rhs: Result) -> Rep<Bool> {
+        return lhs > ^rhs
+    }
+
+    static func <= (lhs: Result, rhs: Rep<Result>) -> Rep<Bool> {
+        return ^lhs <= rhs
+    }
+
+    static func <= (lhs: Rep<Result>, rhs: Result) -> Rep<Bool> {
+        return lhs <= ^rhs
+    }
+
+    static func == (lhs: Result, rhs: Rep<Result>) -> Rep<Bool> {
+        return ^lhs == rhs
+    }
+
+    static func == (lhs: Rep<Result>, rhs: Result) -> Rep<Bool> {
+        return lhs == ^rhs
+    }
+
+    static func != (lhs: Result, rhs: Rep<Result>) -> Rep<Bool> {
+        return ^lhs != rhs
+    }
+
+    static func != (lhs: Rep<Result>, rhs: Result) -> Rep<Bool> {
+        return lhs != ^rhs
+    }
+}
+
 public extension Rep where Result == Bool {
     static func && (lhs: Rep<Bool>, rhs: Rep<Bool>) -> Rep<Bool> {
         return BooleanExpression(operator: .and, left: lhs, right: rhs)
@@ -138,6 +221,27 @@ public extension Rep where Result == Bool {
 
     static prefix func ! (operand: Rep<Bool>) -> Rep<Bool> {
         return LogicalNotExpression(operand: operand)
+    }
+}
+
+/// Overload for stageable constants
+/// - Todo: To be removed when conditional conformance is supported. That is,
+/// when we can declare `extension Rep : ExpressibleByXXX when Result == XXX`
+public extension Rep where Result == Bool {
+    static func && (lhs: Bool, rhs: Rep<Bool>) -> Rep<Bool> {
+        return ^lhs && rhs
+    }
+
+    static func && (lhs: Rep<Bool>, rhs: Bool) -> Rep<Bool> {
+        return lhs && ^rhs
+    }
+
+    static func || (lhs: Bool, rhs: Rep<Bool>) -> Rep<Bool> {
+        return ^lhs || rhs
+    }
+
+    static func || (lhs: Rep<Bool>, rhs: Bool) -> Rep<Bool> {
+        return lhs || ^rhs
     }
 }
 
@@ -153,6 +257,27 @@ public extension Rep where Result : BinaryInteger {
     }
 }
 
+/// Overload for stageable constants
+/// - Todo: To be removed when conditional conformance is supported. That is,
+/// when we can declare `extension Rep : ExpressibleByXXX when Result == XXX`
+public extension Rep where Result : BinaryInteger & Stageable {
+    static func / (lhs: Result, rhs: Rep<Result>) -> Rep<Result> {
+        return ^lhs / rhs
+    }
+
+    static func / (lhs: Rep<Result>, rhs: Result) -> Rep<Result> {
+        return lhs / ^rhs
+    }
+
+    static func % (lhs: Result, rhs: Rep<Result>) -> Rep<Result> {
+        return ^lhs / rhs
+    }
+
+    static func % (lhs: Rep<Result>, rhs: Result) -> Rep<Result> {
+        return lhs / ^rhs
+    }
+}
+
 public extension Rep where Result : FloatingPoint {
     static func / (lhs: Rep<Result>, rhs: Rep<Result>) -> Rep<Result> {
         return FloatingPointDivisionExpression(operator: .divide,
@@ -162,6 +287,27 @@ public extension Rep where Result : FloatingPoint {
     static func % (lhs: Rep<Result>, rhs: Rep<Result>) -> Rep<Result> {
         return FloatingPointDivisionExpression(operator: .remainder,
                                                left: lhs, right: rhs)
+    }
+}
+
+/// Overload for stageable constants
+/// - Todo: To be removed when conditional conformance is supported. That is,
+/// when we can declare `extension Rep : ExpressibleByXXX when Result == XXX`
+public extension Rep where Result : FloatingPoint & Stageable {
+    static func / (lhs: Result, rhs: Rep<Result>) -> Rep<Result> {
+        return ^lhs / rhs
+    }
+
+    static func / (lhs: Rep<Result>, rhs: Result) -> Rep<Result> {
+        return lhs / ^rhs
+    }
+
+    static func % (lhs: Result, rhs: Rep<Result>) -> Rep<Result> {
+        return ^lhs / rhs
+    }
+
+    static func % (lhs: Rep<Result>, rhs: Result) -> Rep<Result> {
+        return lhs / ^rhs
     }
 }
 
@@ -645,5 +791,27 @@ public extension Rep {
         ) -> Rep<R> where Result == [A] {
         return reduce(initial,
                       lambda(file: file, line: line, column: column, combiner))
+    }
+
+    /// - Todo: To be removed when conditional conformance is supported. That is,
+    /// when we can declare `extension Rep : ExpressibleByXXX when Result == XXX`
+    func reduce<A, R : Stageable>(
+        _ initial: R,
+        _ combiner: Rep<(R, A) -> R>
+        ) -> Rep<R> where Result == [A] {
+        return reduce(^initial, combiner)
+    }
+
+    /// - Todo: To be removed when conditional conformance is supported. That is,
+    /// when we can declare `extension Rep : ExpressibleByXXX when Result == XXX`
+    func reduce<A, R : Stageable>(
+        file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+        _ initial: R,
+        _ combiner: @escaping (Rep<R>, Rep<A>) -> Rep<R>
+        ) -> Rep<R> where Result == [A] {
+        return reduce(
+            file: file, line: line, column: column,
+            ^initial, combiner
+        )
     }
 }
