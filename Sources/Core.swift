@@ -234,8 +234,9 @@ class IfExpression<Result> : Expression<Result> {
     }
 
     override func evaluated(in env: Environment) -> Result {
-        let condVal = condition.evaluated(in: env)
-        return condVal ? then().evaluated(in: env) : `else`().evaluated(in: env)
+        return condition.evaluated(in: env)
+            ? then().evaluated(in: env)
+            : `else`().evaluated(in: env)
     }
 }
 
@@ -244,7 +245,8 @@ class CondExpression<Result> : Expression<Result> {
     var clauses: [Clause]
     var `else`: () -> Expression<Result>
 
-    init(clauses: [Clause], `else`: @autoclosure @escaping () -> Expression<Result>) {
+    init(clauses: [Clause],
+         `else`: @autoclosure @escaping () -> Expression<Result>) {
         self.clauses = clauses
         self.`else` = `else`
     }
