@@ -24,25 +24,25 @@ class LMSTests : XCTestCase {
 
     func testArith() {
         let x = ^10
-        XCTAssertEqual((x + 10).evaluated(), 20)
+        XCTAssertEqual((x + 10).!, 20)
     }
 
     func testTuple() {
         let perceptron = lambda { (w: Rep<Float>, x: Rep<Float>, b: Rep<Float>) in
             w * x + b
         }
-        let result = perceptron[^0.8, ^1.0, ^0.4].evaluated()
+        let result = perceptron[^0.8, ^1.0, ^0.4].!
         XCTAssertEqual(result, 1.2)
     }
 
     func testHOF() {
         let array = ^[1.0, 2.0, 3.0, 4.0]
         let sum = array.reduce(0, +)
-        XCTAssertEqual(sum.evaluated(), 10)
+        XCTAssertEqual(sum.!, 10)
         let product = array.reduce(1, *)
-        XCTAssertEqual(product.evaluated(), 24)
+        XCTAssertEqual(product.!, 24)
         let incrBySum = array.map { $0 + sum }
-        XCTAssertEqual(incrBySum.evaluated(), [11, 12, 13, 14])
+        XCTAssertEqual(incrBySum.!, [11, 12, 13, 14])
     }
 
     static var allTests : [(String, (LMSTests) -> () throws -> Void)] {
