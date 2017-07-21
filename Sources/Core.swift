@@ -38,11 +38,6 @@ public class Expression<Result> : Staged {
         fatalError("Oh no!")
     }
 
-    private final func cache(_ result: Result) -> Result {
-        cachedResult = result
-        return result
-    }
-
     final func result(in env: Environment) -> Result {
         if _shouldInvalidateCache {
             cachedResult = nil
@@ -235,7 +230,7 @@ class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return> {
     }
 
     override var shouldInvalidateCache: Bool {
-        return false
+        return true
     }
 
     override fileprivate func evaluated(in env: Environment) -> (Argument) -> Return {
@@ -267,7 +262,7 @@ class ApplyExpression<Argument, Return> : Expression<Return> {
     }
 
     override var shouldInvalidateCache: Bool {
-        return argument.shouldInvalidateCache
+        return closure.shouldInvalidateCache || argument.shouldInvalidateCache
     }
 
     override fileprivate func evaluated(in env: Environment) -> Return {
