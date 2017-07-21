@@ -158,12 +158,12 @@ class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return> {
     }
 
     override func evaluated(in env: Environment) -> (Argument) -> Return {
-        let closure: Closure<Argument, Return> =
+        let closure: Closure<Return> =
             Environment.closure(at: location) ?? {
-                let sym = env.makeSymbol()
+                let sym = Environment.makeSymbol()
                 let symExp = SymbolExpression<Argument>(value: sym)
                 let body = metaClosure(symExp)
-                let closure = Closure<Argument, Return>(formal: sym, body: body)
+                let closure = Closure(formal: sym, body: body)
                 Environment.registerClosure(closure, at: location)
                 return closure
             }()

@@ -35,7 +35,7 @@ struct SourceLocation : Hashable {
 }
 
 /// Closure instance to be stored globally
-struct Closure<Argument, Return> {
+struct Closure<Return> {
     var formal: UInt
     var body: Expression<Return>
 }
@@ -47,6 +47,7 @@ class Environment {
     private var symbolTable: [UInt : Any] = [:]
     /// Tracks global closure instances via static source location
     private static var closureInstances: [SourceLocation : Any] = [:]
+    /// Parent environment in the call graph
     weak var parent: Environment?
 
     init(parent: Environment?) {
@@ -62,17 +63,17 @@ class Environment {
         symbolTable[symbol] = value
     }
 
-    static func closure<T, U>(at location: SourceLocation) -> Closure<T, U>? {
-        return closureInstances[location].map { $0 as! Closure<T, U> }
+    static func closure<T>(at location: SourceLocation) -> Closure<T>? {
+        return closureInstances[location].map { $0 as! Closure<T> }
     }
 
-    static func registerClosure<T, U>(_ closure: Closure<T, U>,
-                                      at location: SourceLocation) {
+    static func registerClosure<T>(_ closure: Closure<T>,
+                                   at location: SourceLocation) {
         closureInstances[location] = closure
     }
 
-    func makeSymbol() -> UInt {
-        defer { Environment.count += 1 }
-        return Environment.count
+    static func makeSymbol() -> UInt {
+        defer { count += 1 }
+        return count
     }
 }
