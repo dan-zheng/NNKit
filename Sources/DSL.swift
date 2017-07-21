@@ -161,21 +161,25 @@ public extension Rep where Result : FloatingPoint {
 
 public func lambda<Argument, Result>(
     file: StaticString = #file, line: UInt = #line, column: UInt = #column,
-    _ closure: @escaping (Rep<Argument>) -> Rep<Result>) -> Rep<(Argument) -> Result> {
+    _ closure: @escaping (Rep<Argument>) -> Rep<Result>)
+    -> Rep<(Argument) -> Result> {
     let loc = SourceLocation(file: file, line: line, column: column)
     return LambdaExpression(closure: closure, location: loc)
 }
 
 public extension Rep {
-    subscript<Argument, ClosureResult>(_ arg: Rep<Argument>) -> Rep<ClosureResult>
+    subscript<Argument, ClosureResult>(_ arg: Rep<Argument>)
+        -> Rep<ClosureResult>
         where Result == (Argument) -> ClosureResult {
-        return ApplyExpression<Argument, ClosureResult>(closure: self, argument: arg)
+        return ApplyExpression<Argument, ClosureResult>(closure: self,
+                                                        argument: arg)
     }
 }
 
-public func `if`<Result>(_ condition: Rep<Bool>,
-                  then: @autoclosure @escaping () -> Rep<Result>,
-                  else: @autoclosure @escaping () -> Rep<Result>) -> Rep<Result> {
+public func `if`<Result>(
+    _ condition: Rep<Bool>,
+    then: @autoclosure @escaping () -> Rep<Result>,
+    else: @autoclosure @escaping () -> Rep<Result>) -> Rep<Result> {
     return IfExpression(condition: condition, then: then(), else: `else`())
 }
 
@@ -239,7 +243,8 @@ public extension Rep {
         return MapExpression(functor: fn, array: self)
     }
 
-    func map<Argument, MapResult>(_ fn: @escaping (Rep<Argument>) -> Rep<MapResult>) -> Rep<[MapResult]>
+    func map<Argument, MapResult>(
+        _ fn: @escaping (Rep<Argument>) -> Rep<MapResult>) -> Rep<[MapResult]>
         where Result == [Argument] {
         return map(lambda(fn))
     }
@@ -248,7 +253,8 @@ public extension Rep {
         _ initial: Rep<ReductionResult>,
         _ combiner: Rep<((ReductionResult, Argument)) -> ReductionResult>) -> Rep<ReductionResult>
         where Result == [Argument] {
-        return ReduceExpression(initial: initial, combiner: combiner, array: self)
+        return ReduceExpression(initial: initial, combiner: combiner,
+                                array: self)
     }
 
     func reduce<Argument, ReductionResult>(
