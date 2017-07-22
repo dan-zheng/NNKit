@@ -110,6 +110,13 @@ class LMSTests : XCTestCase {
         let addTen = curryAdd[ten]
         let twentyFive = addTen[^15]
         XCTAssertEqual(twentyFive.!, 25)
+        /// Y combinator
+        let fac: Rep<(Int) -> Int> = fix { f in
+            lambda { (n: Rep<Int>) in
+                `if`(n == 0, then: ^1, else: n * f[n - 1])
+            }
+        }
+        XCTAssertEqual(fac[^5].!, 120)
     }
 
     static var allTests : [(String, (LMSTests) -> () throws -> Void)] {
