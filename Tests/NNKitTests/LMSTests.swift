@@ -43,11 +43,10 @@ class LMSTests : XCTestCase {
     }
 
     func testIndirectRecursion() {
-        func factorial(_ n: Rep<Int>) -> Rep<Int> {
-            let next = lambda { n in n * factorial(n - 1) }
-            return `if`(n == 0, then: ^1, else: next[n])
+        func fac(_ n: Rep<Int>) -> Rep<Int> {
+            return `if`(n == 0, then: ^1, else: n * lambda(fac)[n-1])
         }
-        let result = factorial(^5).!
+        let result = fac(^5).!
         XCTAssertEqual(result, 120)
     }
 
