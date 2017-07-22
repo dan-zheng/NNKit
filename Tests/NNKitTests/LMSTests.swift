@@ -27,6 +27,13 @@ class LMSTests : XCTestCase {
         XCTAssertEqual((x + 10).!, 20)
     }
 
+    func testFuncApp() {
+        let giveOne = lambda { ^1 }
+        XCTAssertEqual(giveOne[].!, 1)
+        let f = giveOne.!
+        XCTAssertEqual(f(), 1)
+    }
+
     func testTuple() {
         let perceptron = lambda { (w: Rep<Float>, x: Rep<Float>, b: Rep<Float>) in
             w * x + b
@@ -93,10 +100,12 @@ class LMSTests : XCTestCase {
     static var allTests : [(String, (LMSTests) -> () throws -> Void)] {
         return [
             ("testArith", testArith),
+            ("testFuncApp", testFuncApp),
             ("testTuple", testTuple),
             ("testDirectRecursion", testDirectRecursion),
             ("testIndirectRecursion", testIndirectRecursion),
             ("testResultCaching", testResultCaching),
+            ("testCond", testCond),
             ("testHOF", testHOF)
         ]
     }
