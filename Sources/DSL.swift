@@ -82,6 +82,10 @@ public prefix func ^ <T : Stageable>(_ value: [T]) -> Rep<[T]> {
     return ConstantExpression(value: value)
 }
 
+extension Rep where Result == () {
+    static var void: Rep<()> = ConstantExpression(value: ())
+}
+
 // MARK: - Arithmetics
 
 public extension Rep where Result : Numeric {
@@ -609,8 +613,7 @@ public extension Rep {
     subscript<ClosureResult>() -> Rep<ClosureResult>
         where Result == () -> ClosureResult
     {
-        let void = ConstantExpression(value: ())
-        return ApplyExpression<(), ClosureResult>(closure: self, argument: void)
+        return ApplyExpression<(), ClosureResult>(closure: self, argument: .void)
     }
 
     subscript<A, ClosureResult>(_ arg: Rep<A>) -> Rep<ClosureResult>
