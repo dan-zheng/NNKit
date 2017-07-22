@@ -67,11 +67,10 @@ class LMSTests : XCTestCase {
 
     func testCond() {
         func fib(_ n: Rep<Int>) -> Rep<Int> {
-            let next = lambda { n in fib(n - 1) + fib(n - 2) }
             return cond(n == 0, ^0,
                         n == 1, ^1,
-                        n > 1, next[n],
-                        else: next[n])
+                        n > 1, fib(n - 1) + fib(n - 2),
+                        else: fib(n - 1) + fib(n - 2))
         }
         let f5 = fib(^5)
         XCTAssertEqual(f5.!, 5)

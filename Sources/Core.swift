@@ -24,11 +24,9 @@ protocol Staged {
 
 public class Expression<Result> : Staged {
     final var cachedResult: Result? = nil
-    final var shouldInvalidateCache: Bool
 
-    init(shouldInvalidateCache: Bool) {
-        self.shouldInvalidateCache = shouldInvalidateCache
-    }
+    /// Conservative assumption, to be overriden
+    lazy var shouldInvalidateCache: Bool = true
 
     fileprivate func containsSymbol(otherThan sym: UInt) -> Bool {
         fatalError("Override me")
@@ -36,6 +34,11 @@ public class Expression<Result> : Staged {
 
     fileprivate func evaluated(in env: Environment) -> Result {
         fatalError("Override me")
+    }
+
+    fileprivate func updateInvalidation<R>(from exp: Expression<R>) {
+        shouldInvalidateCache =
+            shouldInvalidateCache || exp.shouldInvalidateCache
     }
 
     final func result(in env: Environment) -> Result {
@@ -54,10 +57,10 @@ public class Expression<Result> : Staged {
 
 final class ConstantExpression<Result> : Expression<Result> {
     let value: Result
+    override lazy var shouldInvalidateCache: Bool = false
 
     init(value: Result) {
         self.value = value
-        super.init(shouldInvalidateCache: false)
     }
 
     override func containsSymbol(otherThan sym: UInt) -> Bool {
@@ -71,10 +74,10 @@ final class ConstantExpression<Result> : Expression<Result> {
 
 final class SymbolExpression<Result> : Expression<Result> {
     let value: UInt
+    override lazy var shouldInvalidateCache: Bool = true
 
     init(value: UInt) {
         self.value = value
-        super.init(shouldInvalidateCache: true)
     }
 
     fileprivate override func containsSymbol(otherThan sym: UInt) -> Bool {
@@ -112,6 +115,9 @@ class BinaryExpression<Operator, Operand, Result> : Expression<Result> {
     let left: Expression<Operand>
     let right: Expression<Operand>
 
+    override lazy var shouldInvalidateCache: Bool =
+        self.left.shouldInvalidateCache || self.right.shouldInvalidateCache
+
     override func containsSymbol(otherThan sym: UInt) -> Bool {
         return left.containsSymbol(otherThan: sym)
             || right.containsSymbol(otherThan: sym)
@@ -122,8 +128,6 @@ class BinaryExpression<Operator, Operand, Result> : Expression<Result> {
         self.`operator` = `operator`
         self.left = left
         self.right = right
-        super.init(shouldInvalidateCache:
-            left.shouldInvalidateCache || right.shouldInvalidateCache)
     }
 }
 
@@ -195,9 +199,11 @@ final class BooleanExpression : BinaryExpression<BooleanOperator, Bool, Bool> {
 final class NegateExpression<Operand : SignedNumeric> : Expression<Operand> {
     let operand: Expression<Operand>
 
+    override lazy var shouldInvalidateCache: Bool =
+        self.operand.shouldInvalidateCache
+
     init(operand: Expression<Operand>) {
         self.operand = operand
-        super.init(shouldInvalidateCache: operand.shouldInvalidateCache)
     }
 
     override func containsSymbol(otherThan sym: UInt) -> Bool {
@@ -212,9 +218,11 @@ final class NegateExpression<Operand : SignedNumeric> : Expression<Operand> {
 final class LogicalNotExpression : Expression<Bool> {
     let operand: Expression<Bool>
 
+    override lazy var shouldInvalidateCache: Bool =
+        self.operand.shouldInvalidateCache
+
     init(operand: Expression<Bool>) {
         self.operand = operand
-        super.init(shouldInvalidateCache: operand.shouldInvalidateCache)
     }
 
     override func containsSymbol(otherThan sym: UInt) -> Bool {
@@ -231,12 +239,13 @@ final class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return
     let metaClosure: MetaClosure
     let location: SourceLocation
 
+    /// Assume not invalidating until proven (during one-time staging)
+    /// otherwise
+    override lazy var shouldInvalidateCache: Bool = false
+
     init(closure: @escaping MetaClosure, location: SourceLocation) {
         self.metaClosure = closure
         self.location = location
-        /// Assume not invalidating until proven (during one-time staging)
-        /// otherwise
-        super.init(shouldInvalidateCache: false)
     }
 
     override func containsSymbol(otherThan sym: UInt) -> Bool {
@@ -272,11 +281,13 @@ final class ApplyExpression<Argument, Return> : Expression<Return> {
     let closure: Closure
     let argument: Expression<Argument>
 
+    override lazy var shouldInvalidateCache: Bool =
+        self.closure.shouldInvalidateCache
+     || self.argument.shouldInvalidateCache
+
     init(closure: Closure, argument: Expression<Argument>) {
         self.closure = closure
         self.argument = argument
-        super.init(shouldInvalidateCache:
-            closure.shouldInvalidateCache || argument.shouldInvalidateCache)
     }
 
     override func containsSymbol(otherThan sym: UInt) -> Bool {
@@ -298,18 +309,19 @@ final class IfExpression<Result> : Expression<Result> {
     private let makeElse: () -> Expression<Result>
 
     lazy var then: Expression<Result> = {
-        let then = self.makeThen()
-        self.shouldInvalidateCache =
-            self.shouldInvalidateCache || then.shouldInvalidateCache
-        return then
+        let exp = self.makeThen()
+        self.updateInvalidation(from: exp)
+        return exp
     }()
 
     lazy var `else`: Expression<Result> = {
-        let `else` = self.makeElse()
-        self.shouldInvalidateCache =
-            self.shouldInvalidateCache || `else`.shouldInvalidateCache
-        return `else`
+        let exp = self.makeElse()
+        self.updateInvalidation(from: exp)
+        return exp
     }()
+
+    override lazy var shouldInvalidateCache: Bool =
+        self.condition.shouldInvalidateCache
 
     init(condition: Expression<Bool>,
          then: @autoclosure @escaping () -> Expression<Result>,
@@ -317,7 +329,6 @@ final class IfExpression<Result> : Expression<Result> {
         self.condition = condition
         self.makeThen = then
         self.makeElse = `else`
-        super.init(shouldInvalidateCache: condition.shouldInvalidateCache)
     }
 
     override func containsSymbol(otherThan sym: UInt) -> Bool {
@@ -338,27 +349,24 @@ final class CondExpression<Result> : Expression<Result> {
         case uninitialized(() -> Expression<Result>)
         case initialized(Expression<Result>)
     }
+
     typealias Clause = (Expression<Bool>, ThenClause)
     var clauses: [Clause]
 
     private let makeElse: () -> Expression<Result>
+    lazy var `else`: Expression<Result> = self.makeElse()
 
-    lazy var `else`: Expression<Result> = {
-        let `else` = self.makeElse()
-        self.shouldInvalidateCache =
-            self.shouldInvalidateCache || `else`.shouldInvalidateCache
-        return `else`
+    override lazy var shouldInvalidateCache: Bool = {
+        for (cond, _) in self.clauses where cond.shouldInvalidateCache {
+            return true
+        }
+        return false
     }()
 
     init(clauses: [(Expression<Bool>, () -> Expression<Result>)],
          `else`: @autoclosure @escaping () -> Expression<Result>) {
         self.clauses = clauses.map { ($0, .uninitialized($1)) }
         self.makeElse = `else`
-        var shouldInvalidateCache: Bool = false
-        for (exp, _) in clauses where exp.shouldInvalidateCache {
-            shouldInvalidateCache = true
-        }
-        super.init(shouldInvalidateCache: shouldInvalidateCache)
     }
 
     override func containsSymbol(otherThan sym: UInt) -> Bool {
@@ -370,17 +378,15 @@ final class CondExpression<Result> : Expression<Result> {
 
     fileprivate override func evaluated(in env: Environment) -> Result {
         for (i, (cond, then)) in clauses.enumerated() where cond.result(in: env) {
-            let exp: Expression<Result>
             switch then {
-            case let .initialized(inited):
-                exp = inited
+            case let .initialized(exp):
+                return exp.evaluated(in: env)
             case let .uninitialized(makeExp):
-                exp = makeExp()
+                let exp = makeExp()
                 clauses[i].1 = .initialized(exp)
-                shouldInvalidateCache =
-                    shouldInvalidateCache || exp.shouldInvalidateCache
+                updateInvalidation(from: exp)
+                return exp.evaluated(in: env)
             }
-            return exp.result(in: env)
         }
         return `else`.result(in: env)
     }
@@ -391,11 +397,12 @@ final class MapExpression<Argument, MapResult> : Expression<[MapResult]> {
     let functor: Functor
     let array: Expression<[Argument]>
 
+    override lazy var shouldInvalidateCache: Bool =
+        self.functor.shouldInvalidateCache || self.array.shouldInvalidateCache
+
     init(functor: Functor, array: Expression<[Argument]>) {
         self.functor = functor
         self.array = array
-        super.init(shouldInvalidateCache:
-            functor.shouldInvalidateCache || array.shouldInvalidateCache)
     }
 
     override func containsSymbol(otherThan sym: UInt) -> Bool {
@@ -416,14 +423,16 @@ final class ReduceExpression<Argument, Result> : Expression<Result> {
     let initial: Expression<Result>
     let array: Expression<[Argument]>
 
+    override lazy var shouldInvalidateCache: Bool =
+        self.combiner.shouldInvalidateCache
+     || self.initial.shouldInvalidateCache
+     || self.array.shouldInvalidateCache
+
     init(initial: Expression<Result>, combiner: Combiner,
          array: Expression<[Argument]>) {
         self.initial = initial
         self.combiner = combiner
         self.array = array
-        super.init(shouldInvalidateCache: combiner.shouldInvalidateCache
-                                       || initial.shouldInvalidateCache
-                                       || array.shouldInvalidateCache)
     }
 
     override func containsSymbol(otherThan sym: UInt) -> Bool {
@@ -447,11 +456,12 @@ final class TupleExpression<First, Second> : Expression<(First, Second)> {
     let first: Expression<First>
     let second: Expression<Second>
 
+    override lazy var shouldInvalidateCache: Bool =
+        self.first.shouldInvalidateCache || self.second.shouldInvalidateCache
+
     init(_ first: Expression<First>, _ second: Expression<Second>) {
         self.first = first
         self.second = second
-        super.init(shouldInvalidateCache:
-            first.shouldInvalidateCache || second.shouldInvalidateCache)
     }
 
     override func containsSymbol(otherThan sym: UInt) -> Bool {
@@ -467,9 +477,11 @@ final class TupleExpression<First, Second> : Expression<(First, Second)> {
 final class TupleExtractFirstExpression<First, Second> : Expression<First> {
     let tuple: Expression<(First, Second)>
 
+    override lazy var shouldInvalidateCache: Bool =
+        self.tuple.shouldInvalidateCache
+
     init(_ tuple: Expression<(First, Second)>) {
         self.tuple = tuple
-        super.init(shouldInvalidateCache: tuple.shouldInvalidateCache)
     }
 
     override func containsSymbol(otherThan sym: UInt) -> Bool {
@@ -484,9 +496,11 @@ final class TupleExtractFirstExpression<First, Second> : Expression<First> {
 final class TupleExtractSecondExpression<First, Second> : Expression<Second> {
     let tuple: Expression<(First, Second)>
 
+    override lazy var shouldInvalidateCache: Bool =
+        self.tuple.shouldInvalidateCache
+
     init(_ tuple: Expression<(First, Second)>) {
         self.tuple = tuple
-        super.init(shouldInvalidateCache: tuple.shouldInvalidateCache)
     }
 
     override func containsSymbol(otherThan sym: UInt) -> Bool {
