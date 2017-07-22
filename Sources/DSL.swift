@@ -836,8 +836,49 @@ public extension Rep {
             ^initial, combiner
         )
     }
+
+    func filter<Argument>(_ filter: Rep<(Argument) -> Bool>) -> Rep<[Argument]>
+        where Result == [Argument] {
+            return FilterExpression(filter: filter, array: self)
+    }
+
+    func filter<Argument>(
+        file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+        _ filter: @escaping (Rep<Argument>) -> Rep<Bool>) -> Rep<[Argument]>
+        where Result == [Argument]
+    {
+        return FilterExpression(
+            filter: lambda(file: file, line: line, column: column, filter),
+            array: self
+        )
+    }
 }
 
-public func zip<A, B>(_ sequenceA: Rep<[A]>, _ sequenceB: Rep<[B]>) -> Rep<Zip2Sequence<[A], [B]>> {
-    return ZipExpression(sequenceA, sequenceB)
+public func zip<A, B>(
+    _ array1: Rep<[A]>, _ array2: Rep<[B]>
+    ) -> Rep<Zip2Sequence<[A], [B]>> {
+    return ZipExpression(array1: array1, array2: array2)
+}
+
+public func zipWith<A, B, R>(
+    _ combiner: Rep<(A, B) -> R>,
+    _ array1: Rep<[A]>, _ array2: Rep<[B]>
+    ) -> Rep<[R]> {
+    return ZipWithExpression(combiner: combiner, array1: array1, array2: array2)
+}
+
+
+public func zipWith<A, B, R>(
+    _ array1: Rep<[A]>, _ array2: Rep<[B]>, _ combiner: Rep<(A, B) -> R>
+    ) -> Rep<[R]> {
+    return ZipWithExpression(combiner: combiner, array1: array1, array2: array2)
+}
+
+public func zipWith<A, B, R>(
+    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    _ array1: Rep<[A]>, _ array2: Rep<[B]>,
+    _ combiner: @escaping (Rep<A>, Rep<B>) -> Rep<R>
+    ) -> Rep<[R]> {
+    return zipWith(array1, array2,
+                   lambda(file: file, line: line, column: column, combiner))
 }

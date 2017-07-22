@@ -426,36 +426,91 @@ final class ReduceExpression<Argument, Result> : Expression<Result> {
 
     fileprivate override func evaluated(in env: Environment) -> Result {
         let cloVal = combiner.result(in: env)
-        var accVal = initial.result(in: env)
+        let accVal = initial.result(in: env)
         let arrVal = array.result(in: env)
-        for v in arrVal {
-            accVal = cloVal(accVal, v)
-        }
-        return accVal
+        return arrVal.reduce(accVal, cloVal)
     }
 }
 
-final class ZipExpression<Sequence1, Sequence2>
-    : Expression<Zip2Sequence<[Sequence1], [Sequence2]>> {
-    let sequence1: Expression<[Sequence1]>
-    let sequence2: Expression<[Sequence2]>
+final class FilterExpression<Element> : Expression<[Element]> {
+    typealias Filter = Expression<(Element) -> Bool>
+    let filter: Filter
+    let array: Expression<[Element]>
 
     override lazy var shouldInvalidateCache: Bool =
-        self.sequence1.shouldInvalidateCache || self.sequence2.shouldInvalidateCache
+        self.filter.shouldInvalidateCache || self.array.shouldInvalidateCache
 
-    init(_ sequence1: Expression<[Sequence1]>, _ sequence2: Expression<[Sequence2]>) {
-        self.sequence1 = sequence1
-        self.sequence2 = sequence2
+    init(filter: Filter, array: Expression<[Element]>) {
+        self.filter = filter
+        self.array = array
     }
 
     override func containsSymbol(otherThan sym: UInt) -> Bool {
-        return sequence1.containsSymbol(otherThan: sym)
-            || sequence2.containsSymbol(otherThan: sym)
+        return filter.containsSymbol(otherThan: sym)
+            || array.containsSymbol(otherThan: sym)
+    }
+
+    fileprivate override func evaluated(in env: Environment) -> [Element] {
+        let cloVal = filter.result(in: env)
+        let arrVal = array.result(in: env)
+        return arrVal.filter { cloVal($0) }
+    }
+}
+
+final class ZipExpression<First, Second>
+    : Expression<Zip2Sequence<[First], [Second]>> {
+    let array1: Expression<[First]>
+    let array2: Expression<[Second]>
+
+    override lazy var shouldInvalidateCache: Bool =
+        self.array1.shouldInvalidateCache || self.array2.shouldInvalidateCache
+
+    init(array1: Expression<[First]>, array2: Expression<[Second]>) {
+        self.array1 = array1
+        self.array2 = array2
+    }
+
+    override func containsSymbol(otherThan sym: UInt) -> Bool {
+        return array1.containsSymbol(otherThan: sym)
+            || array2.containsSymbol(otherThan: sym)
     }
 
     fileprivate override func evaluated(in env: Environment)
-        -> Zip2Sequence<[Sequence1], [Sequence2]> {
-        return zip(sequence1.result(in: env), sequence2.result(in: env))
+        -> Zip2Sequence<[First], [Second]> {
+        return zip(array1.result(in: env), array2.result(in: env))
+    }
+}
+
+
+final class ZipWithExpression<First, Second, ZipWithResult>
+    : Expression<[ZipWithResult]> {
+    typealias Combiner = Expression<(First, Second) -> ZipWithResult>
+    let combiner: Combiner
+    let array1: Expression<[First]>
+    let array2: Expression<[Second]>
+
+    override lazy var shouldInvalidateCache: Bool =
+        self.combiner.shouldInvalidateCache
+     || self.array1.shouldInvalidateCache
+     || self.array2.shouldInvalidateCache
+
+    init(combiner: Combiner, array1: Expression<[First]>,
+         array2: Expression<[Second]>) {
+        self.combiner = combiner
+        self.array1 = array1
+        self.array2 = array2
+    }
+
+    override func containsSymbol(otherThan sym: UInt) -> Bool {
+        return combiner.containsSymbol(otherThan: sym)
+            || array1.containsSymbol(otherThan: sym)
+            || array2.containsSymbol(otherThan: sym)
+    }
+
+    fileprivate override func evaluated(in env: Environment) -> [ZipWithResult] {
+        let cloVal = combiner.result(in: env)
+        return zip(array1.result(in: env), array2.result(in: env))
+            .map { cloVal($0.0, $0.1) }
     }
 }
 
