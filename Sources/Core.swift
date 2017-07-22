@@ -244,9 +244,9 @@ final class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return
     let metaClosure: (Expression<Argument>) -> Expression<Return>
     let location: SourceLocation
 
-    override lazy var shouldInvalidateCache: Bool = true
+    override lazy var shouldInvalidateCache: Bool = self.closure.hasFreeVariables
 
-    private var closure: Closure<Return> {
+    private lazy var closure: Closure<Return> = {
         if let closure: Closure<Return> = Environment.closure(at: self.location) {
             return closure
         }
@@ -257,10 +257,9 @@ final class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return
         /// ID does not equal `sym`. If any, set `shouldInvalidateCache`
         /// to `true`
         let closure = Closure(formal: sym, body: body)
-        self.shouldInvalidateCache = closure.hasFreeVariables
         Environment.registerClosure(closure, at: self.location)
         return closure
-    }
+    }()
 
     init(metaClosure: @escaping (Expression<Argument>) -> Expression<Return>,
          location: SourceLocation) {
