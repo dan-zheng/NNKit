@@ -23,7 +23,7 @@ protocol Staged {
 }
 
 public class Expression<Result> : Staged {
-    final var cachedResult: Result? = nil
+    private final var cachedResult: Result? = nil
 
     /// Conservative assumption, to be overriden
     lazy var shouldInvalidateCache: Bool = true
@@ -449,6 +449,30 @@ final class ReduceExpression<Argument, Result> : Expression<Result> {
             accVal = cloVal(accVal, v)
         }
         return accVal
+    }
+}
+
+final class ZipExpression<Sequence1, Sequence2>
+    : Expression<Zip2Sequence<[Sequence1], [Sequence2]>> {
+    let sequence1: Expression<[Sequence1]>
+    let sequence2: Expression<[Sequence2]>
+
+    override lazy var shouldInvalidateCache: Bool =
+        self.sequence1.shouldInvalidateCache || self.sequence2.shouldInvalidateCache
+
+    init(_ sequence1: Expression<[Sequence1]>, _ sequence2: Expression<[Sequence2]>) {
+        self.sequence1 = sequence1
+        self.sequence2 = sequence2
+    }
+
+    override func containsSymbol(otherThan sym: UInt) -> Bool {
+        return sequence1.containsSymbol(otherThan: sym)
+            || sequence2.containsSymbol(otherThan: sym)
+    }
+
+    fileprivate override func evaluated(in env: Environment)
+        -> Zip2Sequence<[Sequence1], [Sequence2]> {
+        return zip(sequence1.result(in: env), sequence2.result(in: env))
     }
 }
 
