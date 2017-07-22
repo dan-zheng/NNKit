@@ -304,31 +304,19 @@ final class ApplyExpression<Argument, Return> : Expression<Return> {
 
 final class IfExpression<Result> : Expression<Result> {
     let condition: Expression<Bool>
-
-    private let makeThen: () -> Expression<Result>
-    private let makeElse: () -> Expression<Result>
-
-    lazy var then: Expression<Result> = {
-        let exp = self.makeThen()
-        self.updateInvalidation(from: exp)
-        return exp
-    }()
-
-    lazy var `else`: Expression<Result> = {
-        let exp = self.makeElse()
-        self.updateInvalidation(from: exp)
-        return exp
-    }()
+    let then: Expression<Result>
+    let `else`: Expression<Result>
 
     override lazy var shouldInvalidateCache: Bool =
         self.condition.shouldInvalidateCache
+     || self.then.shouldInvalidateCache
+     || self.`else`.shouldInvalidateCache
 
-    init(condition: Expression<Bool>,
-         then: @autoclosure @escaping () -> Expression<Result>,
-         else: @autoclosure @escaping () -> Expression<Result>) {
+    init(condition: Expression<Bool>, then: Expression<Result>,
+         else: Expression<Result>) {
         self.condition = condition
-        self.makeThen = then
-        self.makeElse = `else`
+        self.then = then
+        self.`else` = `else`
     }
 
     override func containsSymbol(otherThan sym: UInt) -> Bool {
@@ -345,48 +333,38 @@ final class IfExpression<Result> : Expression<Result> {
 }
 
 final class CondExpression<Result> : Expression<Result> {
-    enum ThenClause {
-        case uninitialized(() -> Expression<Result>)
-        case initialized(Expression<Result>)
-    }
-
-    typealias Clause = (Expression<Bool>, ThenClause)
-    var clauses: [Clause]
-
-    private let makeElse: () -> Expression<Result>
-    lazy var `else`: Expression<Result> = self.makeElse()
+    typealias Clause = (Expression<Bool>, Expression<Result>)
+    let clauses: [Clause]
+    let `else`: Expression<Result>
 
     override lazy var shouldInvalidateCache: Bool = {
-        for (cond, _) in self.clauses where cond.shouldInvalidateCache {
-            return true
+        for (cond, then) in self.clauses {
+            if cond.shouldInvalidateCache || then.shouldInvalidateCache {
+                return true
+            }
         }
-        return false
+        return self.`else`.shouldInvalidateCache
     }()
 
-    init(clauses: [(Expression<Bool>, () -> Expression<Result>)],
-         `else`: @autoclosure @escaping () -> Expression<Result>) {
-        self.clauses = clauses.map { ($0, .uninitialized($1)) }
-        self.makeElse = `else`
+    init(clauses: [(Expression<Bool>, Expression<Result>)],
+         `else`: Expression<Result>) {
+        self.clauses = clauses
+        self.`else` = `else`
     }
 
     override func containsSymbol(otherThan sym: UInt) -> Bool {
-        for (exp, _) in clauses where exp.containsSymbol(otherThan: sym) {
-            return true
+        for (exp, then) in clauses {
+            if exp.containsSymbol(otherThan: sym) ||
+                then.containsSymbol(otherThan: sym) {
+                return true
+            }
         }
-        return false
+        return `else`.containsSymbol(otherThan: sym)
     }
 
     fileprivate override func evaluated(in env: Environment) -> Result {
-        for (i, (cond, then)) in clauses.enumerated() where cond.result(in: env) {
-            switch then {
-            case let .initialized(exp):
-                return exp.evaluated(in: env)
-            case let .uninitialized(makeExp):
-                let exp = makeExp()
-                clauses[i].1 = .initialized(exp)
-                updateInvalidation(from: exp)
-                return exp.evaluated(in: env)
-            }
+        for (cond, then) in clauses where cond.result(in: env) {
+            return then.result(in: env)
         }
         return `else`.result(in: env)
     }

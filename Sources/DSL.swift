@@ -723,32 +723,31 @@ public extension Rep {
 // MARK: - Control flow
 
 public func `if`<Result>(
-    _ condition: Rep<Bool>,
-    then: @autoclosure @escaping () -> Rep<Result>,
-    else: @autoclosure @escaping () -> Rep<Result>) -> Rep<Result> {
-    return IfExpression(condition: condition, then: then(), else: `else`())
+    _ condition: Rep<Bool>, then: Rep<Result>, else: Rep<Result>
+    ) -> Rep<Result> {
+    return IfExpression(condition: condition, then: then, else: `else`)
 }
 
 public func cond<Result>(
-    _ cond1: Rep<Bool>, _ then1: @autoclosure @escaping () -> Rep<Result>,
-    `else`: @autoclosure @escaping () -> Rep<Result>) -> Rep<Result> {
+    _ cond1: Rep<Bool>, _ then1: Rep<Result>, `else`: Rep<Result>
+    ) -> Rep<Result> {
     return CondExpression(clauses: [(cond1, then1)], else: `else`)
 }
 
 public func cond<Result>(
-    _ cond1: Rep<Bool>, _ then1: @autoclosure @escaping () -> Rep<Result>,
-    _ cond2: Rep<Bool>, _ then2: @autoclosure @escaping () -> Rep<Result>,
-    `else`: @autoclosure @escaping () -> Rep<Result>) -> Rep<Result> {
+    _ cond1: Rep<Bool>, _ then1: Rep<Result>,
+    _ cond2: Rep<Bool>, _ then2: Rep<Result>,
+    `else`: Rep<Result>) -> Rep<Result> {
     return CondExpression(clauses: [(cond1, then1),
                                     (cond2, then2)],
                           else: `else`)
 }
 
 public func cond<Result>(
-    _ cond1: Rep<Bool>, _ then1: @autoclosure @escaping () -> Rep<Result>,
-    _ cond2: Rep<Bool>, _ then2: @autoclosure @escaping () -> Rep<Result>,
-    _ cond3: Rep<Bool>, _ then3: @autoclosure @escaping () -> Rep<Result>,
-    `else`: @autoclosure @escaping () -> Rep<Result>) -> Rep<Result> {
+    _ cond1: Rep<Bool>, _ then1: Rep<Result>,
+    _ cond2: Rep<Bool>, _ then2: Rep<Result>,
+    _ cond3: Rep<Bool>, _ then3: Rep<Result>,
+    `else`: Rep<Result>) -> Rep<Result> {
     return CondExpression(clauses: [(cond1, then1),
                                     (cond2, then2),
                                     (cond3, then3)],
@@ -756,11 +755,11 @@ public func cond<Result>(
 }
 
 public func cond<Result>(
-    _ cond1: Rep<Bool>, _ then1: @autoclosure @escaping () -> Rep<Result>,
-    _ cond2: Rep<Bool>, _ then2: @autoclosure @escaping () -> Rep<Result>,
-    _ cond3: Rep<Bool>, _ then3: @autoclosure @escaping () -> Rep<Result>,
-    _ cond4: Rep<Bool>, _ then4: @autoclosure @escaping () -> Rep<Result>,
-    `else`: @autoclosure @escaping () -> Rep<Result>) -> Rep<Result> {
+    _ cond1: Rep<Bool>, _ then1: Rep<Result>,
+    _ cond2: Rep<Bool>, _ then2: Rep<Result>,
+    _ cond3: Rep<Bool>, _ then3: Rep<Result>,
+    _ cond4: Rep<Bool>, _ then4: Rep<Result>,
+    `else`: Rep<Result>) -> Rep<Result> {
     return CondExpression(clauses: [(cond1, then1),
                                     (cond2, then2),
                                     (cond3, then3),
@@ -769,12 +768,12 @@ public func cond<Result>(
 }
 
 public func cond<Result>(
-    _ cond1: Rep<Bool>, _ then1: @autoclosure @escaping () -> Rep<Result>,
-    _ cond2: Rep<Bool>, _ then2: @autoclosure @escaping () -> Rep<Result>,
-    _ cond3: Rep<Bool>, _ then3: @autoclosure @escaping () -> Rep<Result>,
-    _ cond4: Rep<Bool>, _ then4: @autoclosure @escaping () -> Rep<Result>,
-    _ cond5: Rep<Bool>, _ then5: @autoclosure @escaping () -> Rep<Result>,
-    `else`: @autoclosure @escaping () -> Rep<Result>) -> Rep<Result> {
+    _ cond1: Rep<Bool>, _ then1: Rep<Result>,
+    _ cond2: Rep<Bool>, _ then2: Rep<Result>,
+    _ cond3: Rep<Bool>, _ then3: Rep<Result>,
+    _ cond4: Rep<Bool>, _ then4: Rep<Result>,
+    _ cond5: Rep<Bool>, _ then5: Rep<Result>,
+    `else`: Rep<Result>) -> Rep<Result> {
     return CondExpression(clauses: [(cond1, then1),
                                     (cond2, then2),
                                     (cond3, then3),
