@@ -53,7 +53,12 @@ class LMSTests : XCTestCase {
     func testResultCaching() {
         let sumTimes10: Rep<(Int, Int) -> (Int) -> Int> =
             lambda { x, y in lambda { z in (x + y + z) * ^10 } }
-        let prod = sumTimes10[^3, ^4][^5]
+        XCTAssertFalse(sumTimes10.shouldInvalidateCache)
+        let expr = sumTimes10 as! LambdaExpression<(Int, Int), (Int) -> Int>
+        XCTAssertTrue(expr.closure.body.shouldInvalidateCache)
+        let innerLambda = sumTimes10[^3, ^4]
+        XCTAssertFalse(innerLambda.shouldInvalidateCache)
+        let prod = innerLambda[^5]
         XCTAssertEqual(prod.!, 120)
         XCTAssertEqual(prod.!, 120)
         let prod2 = sumTimes10[^1, ^2][prod]
