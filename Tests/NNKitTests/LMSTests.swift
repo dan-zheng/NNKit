@@ -89,7 +89,7 @@ class LMSTests : XCTestCase {
         XCTAssertEqual(incrBySum.!, [11, 12, 13, 14])
         let zipped = zip(array, incrBySum)
         XCTAssertEqual((zipped.!).elementsEqual(
-            [(1.0, 11), (2.0, 12), (3.0, 13), (4.0, 14)], by: ==), true)
+            [(1, 11), (2, 12), (3, 13), (4, 14)], by: ==), true)
     }
 
     static var allTests : [(String, (LMSTests) -> () throws -> Void)] {
