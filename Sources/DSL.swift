@@ -874,3 +874,9 @@ public func zip<A, B, R>(
     return zip(array1, array2,
                with: lambda(file: file, line: line, column: column, combiner))
 }
+
+/// Y combinator
+func fix<D, R>(
+    _ f: @escaping (Rep<(D) -> R>) -> Rep<(D) -> R>) -> Rep<(D) -> R> {
+    return lambda { d in f(fix(f))[d] }
+}
