@@ -785,15 +785,15 @@ public func cond<Result>(
 // MARK: - Higher-order functions
 
 public extension Rep {
-    func map<Argument, MapResult>(_ fn: Rep<(Argument) -> MapResult>) -> Rep<[MapResult]>
-        where Result == [Argument] {
+    func map<Element, MapResult>(_ fn: Rep<(Element) -> MapResult>) -> Rep<[MapResult]>
+        where Result == [Element] {
         return MapExpression(functor: fn, array: self)
     }
 
-    func map<Argument, MapResult>(
+    func map<Element, MapResult>(
         file: StaticString = #file, line: UInt = #line, column: UInt = #column,
-        _ fn: @escaping (Rep<Argument>) -> Rep<MapResult>) -> Rep<[MapResult]>
-        where Result == [Argument]
+        _ fn: @escaping (Rep<Element>) -> Rep<MapResult>) -> Rep<[MapResult]>
+        where Result == [Element]
     {
         return map(lambda(file: file, line: line, column: column, fn))
     }
@@ -837,15 +837,15 @@ public extension Rep {
         )
     }
 
-    func filter<Argument>(_ filter: Rep<(Argument) -> Bool>) -> Rep<[Argument]>
-        where Result == [Argument] {
+    func filter<Element>(_ filter: Rep<(Element) -> Bool>) -> Rep<[Element]>
+        where Result == [Element] {
             return FilterExpression(filter: filter, array: self)
     }
 
-    func filter<Argument>(
+    func filter<Element>(
         file: StaticString = #file, line: UInt = #line, column: UInt = #column,
-        _ filter: @escaping (Rep<Argument>) -> Rep<Bool>) -> Rep<[Argument]>
-        where Result == [Argument]
+        _ filter: @escaping (Rep<Element>) -> Rep<Bool>) -> Rep<[Element]>
+        where Result == [Element]
     {
         return FilterExpression(
             filter: lambda(file: file, line: line, column: column, filter),

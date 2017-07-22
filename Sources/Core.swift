@@ -375,15 +375,15 @@ final class CondExpression<Result> : Expression<Result> {
     }
 }
 
-final class MapExpression<Argument, MapResult> : Expression<[MapResult]> {
-    typealias Functor = Expression<(Argument) -> MapResult>
+final class MapExpression<Element, MapResult> : Expression<[MapResult]> {
+    typealias Functor = Expression<(Element) -> MapResult>
     let functor: Functor
-    let array: Expression<[Argument]>
+    let array: Expression<[Element]>
 
     override lazy var shouldInvalidateCache: Bool =
         self.functor.shouldInvalidateCache || self.array.shouldInvalidateCache
 
-    init(functor: Functor, array: Expression<[Argument]>) {
+    init(functor: Functor, array: Expression<[Element]>) {
         self.functor = functor
         self.array = array
     }
@@ -400,11 +400,11 @@ final class MapExpression<Argument, MapResult> : Expression<[MapResult]> {
     }
 }
 
-final class ReduceExpression<Argument, Result> : Expression<Result> {
-    typealias Combiner = Expression<(Result, Argument) -> Result>
+final class ReduceExpression<Element, Result> : Expression<Result> {
+    typealias Combiner = Expression<(Result, Element) -> Result>
     let combiner: Combiner
     let initial: Expression<Result>
-    let array: Expression<[Argument]>
+    let array: Expression<[Element]>
 
     override lazy var shouldInvalidateCache: Bool =
         self.combiner.shouldInvalidateCache
@@ -412,7 +412,7 @@ final class ReduceExpression<Argument, Result> : Expression<Result> {
      || self.array.shouldInvalidateCache
 
     init(initial: Expression<Result>, combiner: Combiner,
-         array: Expression<[Argument]>) {
+         array: Expression<[Element]>) {
         self.initial = initial
         self.combiner = combiner
         self.array = array
