@@ -246,7 +246,7 @@ final class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return
 
     override lazy var shouldInvalidateCache: Bool = self.closure.hasFreeVariables
 
-    private lazy var closure: Closure<Return> = {
+    lazy var closure: Closure<Return> = {
         if let closure: Closure<Return> = Environment.closure(at: self.location) {
             return closure
         }
