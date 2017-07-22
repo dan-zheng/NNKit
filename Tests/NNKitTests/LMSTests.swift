@@ -87,6 +87,14 @@ class LMSTests : XCTestCase {
         XCTAssertEqual(product.!, 24)
         let incrBySum = array.map { $0 + sum }
         XCTAssertEqual(incrBySum.!, [11, 12, 13, 14])
+        let odds = array.filter { $0 % 2 != 0 }
+        XCTAssertEqual(odds.!, [1, 3])
+        let zipped = zip(array, incrBySum)
+        XCTAssert((zipped.!).elementsEqual(
+            [(1, 11), (2, 12), (3, 13), (4, 14)], by: ==))
+        let zippedWith = zipWith(array, incrBySum, -)
+        XCTAssert((zippedWith.!).elementsEqual(
+            [-10, -10, -10, -10], by: ==))
     }
 
     static var allTests : [(String, (LMSTests) -> () throws -> Void)] {

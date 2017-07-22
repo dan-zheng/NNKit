@@ -375,15 +375,15 @@ final class CondExpression<Result> : Expression<Result> {
     }
 }
 
-final class MapExpression<Argument, MapResult> : Expression<[MapResult]> {
-    typealias Functor = Expression<(Argument) -> MapResult>
+final class MapExpression<Element, MapResult> : Expression<[MapResult]> {
+    typealias Functor = Expression<(Element) -> MapResult>
     let functor: Functor
-    let array: Expression<[Argument]>
+    let array: Expression<[Element]>
 
     override lazy var shouldInvalidateCache: Bool =
         self.functor.shouldInvalidateCache || self.array.shouldInvalidateCache
 
-    init(functor: Functor, array: Expression<[Argument]>) {
+    init(functor: Functor, array: Expression<[Element]>) {
         self.functor = functor
         self.array = array
     }
@@ -400,11 +400,11 @@ final class MapExpression<Argument, MapResult> : Expression<[MapResult]> {
     }
 }
 
-final class ReduceExpression<Argument, Result> : Expression<Result> {
-    typealias Combiner = Expression<(Result, Argument) -> Result>
+final class ReduceExpression<Element, Result> : Expression<Result> {
+    typealias Combiner = Expression<(Result, Element) -> Result>
     let combiner: Combiner
     let initial: Expression<Result>
-    let array: Expression<[Argument]>
+    let array: Expression<[Element]>
 
     override lazy var shouldInvalidateCache: Bool =
         self.combiner.shouldInvalidateCache
@@ -412,7 +412,7 @@ final class ReduceExpression<Argument, Result> : Expression<Result> {
      || self.array.shouldInvalidateCache
 
     init(initial: Expression<Result>, combiner: Combiner,
-         array: Expression<[Argument]>) {
+         array: Expression<[Element]>) {
         self.initial = initial
         self.combiner = combiner
         self.array = array
@@ -426,12 +426,91 @@ final class ReduceExpression<Argument, Result> : Expression<Result> {
 
     fileprivate override func evaluated(in env: Environment) -> Result {
         let cloVal = combiner.result(in: env)
-        var accVal = initial.result(in: env)
+        let accVal = initial.result(in: env)
         let arrVal = array.result(in: env)
-        for v in arrVal {
-            accVal = cloVal(accVal, v)
-        }
-        return accVal
+        return arrVal.reduce(accVal, cloVal)
+    }
+}
+
+final class FilterExpression<Element> : Expression<[Element]> {
+    typealias Filter = Expression<(Element) -> Bool>
+    let filter: Filter
+    let array: Expression<[Element]>
+
+    override lazy var shouldInvalidateCache: Bool =
+        self.filter.shouldInvalidateCache || self.array.shouldInvalidateCache
+
+    init(filter: Filter, array: Expression<[Element]>) {
+        self.filter = filter
+        self.array = array
+    }
+
+    override func containsSymbol(otherThan sym: UInt) -> Bool {
+        return filter.containsSymbol(otherThan: sym)
+            || array.containsSymbol(otherThan: sym)
+    }
+
+    fileprivate override func evaluated(in env: Environment) -> [Element] {
+        let cloVal = filter.result(in: env)
+        let arrVal = array.result(in: env)
+        return arrVal.filter { cloVal($0) }
+    }
+}
+
+final class ZipExpression<First, Second>
+    : Expression<Zip2Sequence<[First], [Second]>> {
+    let array1: Expression<[First]>
+    let array2: Expression<[Second]>
+
+    override lazy var shouldInvalidateCache: Bool =
+        self.array1.shouldInvalidateCache || self.array2.shouldInvalidateCache
+
+    init(array1: Expression<[First]>, array2: Expression<[Second]>) {
+        self.array1 = array1
+        self.array2 = array2
+    }
+
+    override func containsSymbol(otherThan sym: UInt) -> Bool {
+        return array1.containsSymbol(otherThan: sym)
+            || array2.containsSymbol(otherThan: sym)
+    }
+
+    fileprivate override func evaluated(in env: Environment)
+        -> Zip2Sequence<[First], [Second]> {
+        return zip(array1.result(in: env), array2.result(in: env))
+    }
+}
+
+
+final class ZipWithExpression<First, Second, ZipWithResult>
+    : Expression<[ZipWithResult]> {
+    typealias Combiner = Expression<(First, Second) -> ZipWithResult>
+    let combiner: Combiner
+    let array1: Expression<[First]>
+    let array2: Expression<[Second]>
+
+    override lazy var shouldInvalidateCache: Bool =
+        self.combiner.shouldInvalidateCache
+     || self.array1.shouldInvalidateCache
+     || self.array2.shouldInvalidateCache
+
+    init(combiner: Combiner, array1: Expression<[First]>,
+         array2: Expression<[Second]>) {
+        self.combiner = combiner
+        self.array1 = array1
+        self.array2 = array2
+    }
+
+    override func containsSymbol(otherThan sym: UInt) -> Bool {
+        return combiner.containsSymbol(otherThan: sym)
+            || array1.containsSymbol(otherThan: sym)
+            || array2.containsSymbol(otherThan: sym)
+    }
+
+    fileprivate override func evaluated(in env: Environment) -> [ZipWithResult] {
+        let cloVal = combiner.result(in: env)
+        return zip(array1.result(in: env), array2.result(in: env))
+            .map { cloVal($0.0, $0.1) }
     }
 }
 

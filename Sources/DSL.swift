@@ -785,15 +785,15 @@ public func cond<Result>(
 // MARK: - Higher-order functions
 
 public extension Rep {
-    func map<Argument, MapResult>(_ fn: Rep<(Argument) -> MapResult>) -> Rep<[MapResult]>
-        where Result == [Argument] {
+    func map<Element, MapResult>(_ fn: Rep<(Element) -> MapResult>) -> Rep<[MapResult]>
+        where Result == [Element] {
         return MapExpression(functor: fn, array: self)
     }
 
-    func map<Argument, MapResult>(
+    func map<Element, MapResult>(
         file: StaticString = #file, line: UInt = #line, column: UInt = #column,
-        _ fn: @escaping (Rep<Argument>) -> Rep<MapResult>) -> Rep<[MapResult]>
-        where Result == [Argument]
+        _ fn: @escaping (Rep<Element>) -> Rep<MapResult>) -> Rep<[MapResult]>
+        where Result == [Element]
     {
         return map(lambda(file: file, line: line, column: column, fn))
     }
@@ -836,4 +836,49 @@ public extension Rep {
             ^initial, combiner
         )
     }
+
+    func filter<Element>(_ filter: Rep<(Element) -> Bool>) -> Rep<[Element]>
+        where Result == [Element] {
+            return FilterExpression(filter: filter, array: self)
+    }
+
+    func filter<Element>(
+        file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+        _ filter: @escaping (Rep<Element>) -> Rep<Bool>) -> Rep<[Element]>
+        where Result == [Element]
+    {
+        return FilterExpression(
+            filter: lambda(file: file, line: line, column: column, filter),
+            array: self
+        )
+    }
+}
+
+public func zip<A, B>(
+    _ array1: Rep<[A]>, _ array2: Rep<[B]>
+    ) -> Rep<Zip2Sequence<[A], [B]>> {
+    return ZipExpression(array1: array1, array2: array2)
+}
+
+public func zipWith<A, B, R>(
+    _ combiner: Rep<(A, B) -> R>,
+    _ array1: Rep<[A]>, _ array2: Rep<[B]>
+    ) -> Rep<[R]> {
+    return ZipWithExpression(combiner: combiner, array1: array1, array2: array2)
+}
+
+
+public func zipWith<A, B, R>(
+    _ array1: Rep<[A]>, _ array2: Rep<[B]>, _ combiner: Rep<(A, B) -> R>
+    ) -> Rep<[R]> {
+    return ZipWithExpression(combiner: combiner, array1: array1, array2: array2)
+}
+
+public func zipWith<A, B, R>(
+    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    _ array1: Rep<[A]>, _ array2: Rep<[B]>,
+    _ combiner: @escaping (Rep<A>, Rep<B>) -> Rep<R>
+    ) -> Rep<[R]> {
+    return zipWith(array1, array2,
+                   lambda(file: file, line: line, column: column, combiner))
 }
