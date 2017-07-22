@@ -234,17 +234,37 @@ final class LogicalNotExpression : Expression<Bool> {
     }
 }
 
+fileprivate extension Closure {
+    var hasFreeVariables: Bool {
+        return body.containsSymbol(otherThan: formal)
+    }
+}
+
 final class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return> {
-    typealias MetaClosure = (Expression<Argument>) -> Expression<Return>
-    let metaClosure: MetaClosure
+    let metaClosure: (Expression<Argument>) -> Expression<Return>
     let location: SourceLocation
 
-    /// Assume not invalidating until proven (during one-time staging)
-    /// otherwise
-    override lazy var shouldInvalidateCache: Bool = false
+    override lazy var shouldInvalidateCache: Bool = true
 
-    init(closure: @escaping MetaClosure, location: SourceLocation) {
-        self.metaClosure = closure
+    private var closure: Closure<Return> {
+        if let closure: Closure<Return> = Environment.closure(at: self.location) {
+            return closure
+        }
+        let sym = Environment.makeSymbol()
+        let symExp = SymbolExpression<Argument>(value: sym)
+        let body = self.metaClosure(symExp)
+        /// DFS in body and see if there's any SymbolExp whose
+        /// ID does not equal `sym`. If any, set `shouldInvalidateCache`
+        /// to `true`
+        let closure = Closure(formal: sym, body: body)
+        self.shouldInvalidateCache = closure.hasFreeVariables
+        Environment.registerClosure(closure, at: self.location)
+        return closure
+    }
+
+    init(metaClosure: @escaping (Expression<Argument>) -> Expression<Return>,
+         location: SourceLocation) {
+        self.metaClosure = metaClosure
         self.location = location
     }
 
@@ -253,39 +273,24 @@ final class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return
     }
 
     fileprivate override func evaluated(in env: Environment) -> (Argument) -> Return {
-        let closure: Closure<Return> =
-            Environment.closure(at: location) ?? {
-                let sym = Environment.makeSymbol()
-                let symExp = SymbolExpression<Argument>(value: sym)
-                let body = metaClosure(symExp)
-                /// DFS in body and see if there's any SymbolExp whose
-                /// ID does not equal `sym`. If any, set `shouldInvalidateCache`
-                /// to `true`
-                if body.containsSymbol(otherThan: sym) {
-                    shouldInvalidateCache = true
-                }
-                let closure = Closure(formal: sym, body: body)
-                Environment.registerClosure(closure, at: location)
-                return closure
-            }()
         return { arg in
             let newEnv = Environment(parent: env)
-            newEnv.insert(arg, for: closure.formal)
-            return closure.body.result(in: newEnv)
+            newEnv.insert(arg, for: self.closure.formal)
+            return self.closure.body.result(in: newEnv)
         }
     }
 }
 
 final class ApplyExpression<Argument, Return> : Expression<Return> {
-    typealias Closure = Expression<(Argument) -> Return>
-    let closure: Closure
+    let closure: Expression<(Argument) -> Return>
     let argument: Expression<Argument>
 
     override lazy var shouldInvalidateCache: Bool =
         self.closure.shouldInvalidateCache
      || self.argument.shouldInvalidateCache
 
-    init(closure: Closure, argument: Expression<Argument>) {
+    init(closure: Expression<(Argument) -> Return>,
+         argument: Expression<Argument>) {
         self.closure = closure
         self.argument = argument
     }

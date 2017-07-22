@@ -482,7 +482,7 @@ public func lambda<Result>(
     _ closure: @escaping () -> Rep<Result>
     ) -> Rep<() -> Result> {
     let loc = SourceLocation(file: file, line: line, column: column)
-    return LambdaExpression(closure: { _ in closure() }, location: loc)
+    return LambdaExpression(metaClosure: { _ in closure() }, location: loc)
 }
 
 public func lambda<Argument, Result>(
@@ -490,7 +490,7 @@ public func lambda<Argument, Result>(
     _ closure: @escaping (Rep<Argument>) -> Rep<Result>
     ) -> Rep<(Argument) -> Result> {
     let loc = SourceLocation(file: file, line: line, column: column)
-    return LambdaExpression(closure: closure, location: loc)
+    return LambdaExpression(metaClosure: closure, location: loc)
 }
 
 public func lambda<A, B, Result>(
@@ -502,7 +502,7 @@ public func lambda<A, B, Result>(
         let (a, b) = *x
         return closure(a, b)
     }
-    return LambdaExpression(closure: f, location: loc)
+    return LambdaExpression(metaClosure: f, location: loc)
 }
 
 public func lambda<A, B, C, Result>(
@@ -514,7 +514,7 @@ public func lambda<A, B, C, Result>(
         let (a, b, c) = *x
         return closure(a, b, c)
     }
-    return LambdaExpression(closure: f, location: loc)
+    return LambdaExpression(metaClosure: f, location: loc)
 }
 
 public func lambda<A, B, C, D, Result>(
@@ -526,7 +526,7 @@ public func lambda<A, B, C, D, Result>(
         let (a, b, c, d) = *x
         return closure(a, b, c, d)
     }
-    return LambdaExpression(closure: f, location: loc)
+    return LambdaExpression(metaClosure: f, location: loc)
 }
 
 public func lambda<A, B, C, D, E, Result>(
@@ -538,7 +538,7 @@ public func lambda<A, B, C, D, E, Result>(
         let (a, b, c, d, e) = *x
         return closure(a, b, c, d, e)
     }
-    return LambdaExpression(closure: f, location: loc)
+    return LambdaExpression(metaClosure: f, location: loc)
 }
 
 public func lambda<A, B, C, D, E, F, Result>(
@@ -551,7 +551,7 @@ public func lambda<A, B, C, D, E, F, Result>(
         let (a, b, c, d, e, f) = *x
         return closure(a, b, c, d, e, f)
     }
-    return LambdaExpression(closure: f, location: loc)
+    return LambdaExpression(metaClosure: f, location: loc)
 }
 
 public func lambda<A, B, C, D, E, F, G, Result>(
@@ -564,7 +564,7 @@ public func lambda<A, B, C, D, E, F, G, Result>(
         let (a, b, c, d, e, f, g) = *x
         return closure(a, b, c, d, e, f, g)
     }
-    return LambdaExpression(closure: f, location: loc)
+    return LambdaExpression(metaClosure: f, location: loc)
 }
 
 public func lambda<A, B, C, D, E, F, G, H, Result>(
@@ -577,7 +577,7 @@ public func lambda<A, B, C, D, E, F, G, H, Result>(
         let (a, b, c, d, e, f, g, h) = *x
         return closure(a, b, c, d, e, f, g, h)
     }
-    return LambdaExpression(closure: f, location: loc)
+    return LambdaExpression(metaClosure: f, location: loc)
 }
 
 public func lambda<A, B, C, D, E, F, G, H, I, Result>(
@@ -590,7 +590,7 @@ public func lambda<A, B, C, D, E, F, G, H, I, Result>(
         let (a, b, c, d, e, f, g, h, i) = *x
         return closure(a, b, c, d, e, f, g, h, i)
     }
-    return LambdaExpression(closure: f, location: loc)
+    return LambdaExpression(metaClosure: f, location: loc)
 }
 
 // MARK: - Function application
@@ -606,7 +606,7 @@ public func lambda<A, B, C, D, E, F, G, H, I, J, Result>(
         let (a, b, c, d, e, f, g, h, i, j) = *x
         return closure(a, b, c, d, e, f, g, h, i, j)
     }
-    return LambdaExpression(closure: f, location: loc)
+    return LambdaExpression(metaClosure: f, location: loc)
 }
 
 public extension Rep {
