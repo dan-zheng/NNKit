@@ -92,7 +92,7 @@ class LMSTests : XCTestCase {
         let zipped = zip(array, incrBySum)
         XCTAssert((zipped.!).elementsEqual(
             [(1, 11), (2, 12), (3, 13), (4, 14)], by: ==))
-        let zippedWith = zipWith(array, incrBySum, -)
+        let zippedWith = zip(array, incrBySum, with: -)
         XCTAssert((zippedWith.!).elementsEqual(
             [-10, -10, -10, -10], by: ==))
     }

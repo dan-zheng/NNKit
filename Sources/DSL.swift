@@ -860,25 +860,17 @@ public func zip<A, B>(
     return ZipExpression(array1: array1, array2: array2)
 }
 
-public func zipWith<A, B, R>(
-    _ combiner: Rep<(A, B) -> R>,
-    _ array1: Rep<[A]>, _ array2: Rep<[B]>
+public func zip<A, B, R>(
+    _ array1: Rep<[A]>, _ array2: Rep<[B]>, with combiner: Rep<(A, B) -> R>
     ) -> Rep<[R]> {
     return ZipWithExpression(combiner: combiner, array1: array1, array2: array2)
 }
 
-
-public func zipWith<A, B, R>(
-    _ array1: Rep<[A]>, _ array2: Rep<[B]>, _ combiner: Rep<(A, B) -> R>
-    ) -> Rep<[R]> {
-    return ZipWithExpression(combiner: combiner, array1: array1, array2: array2)
-}
-
-public func zipWith<A, B, R>(
+public func zip<A, B, R>(
     file: StaticString = #file, line: UInt = #line, column: UInt = #column,
     _ array1: Rep<[A]>, _ array2: Rep<[B]>,
-    _ combiner: @escaping (Rep<A>, Rep<B>) -> Rep<R>
+    with combiner: @escaping (Rep<A>, Rep<B>) -> Rep<R>
     ) -> Rep<[R]> {
-    return zipWith(array1, array2,
-                   lambda(file: file, line: line, column: column, combiner))
+    return zip(array1, array2,
+               with: lambda(file: file, line: line, column: column, combiner))
 }
