@@ -80,6 +80,7 @@ class LMSTests : XCTestCase {
     }
 
     func testHOF() {
+        /// Collections
         let array = ^[1.0, 2.0, 3.0, 4.0]
         let sum = array.reduce(0, +)
         XCTAssertEqual(sum.!, 10)
@@ -95,6 +96,20 @@ class LMSTests : XCTestCase {
         let zippedWith = zip(array, incrBySum, with: -)
         XCTAssert((zippedWith.!).elementsEqual(
             [-10, -10, -10, -10], by: ==))
+        /// Currying
+        let ten = ^10
+        let add: Rep<(Int, Int) -> Int> = lambda(+)
+        let curry = lambda { (f: Rep<(Int, Int) -> Int>) in
+            lambda { x in
+                lambda { y in
+                    f[x, y]
+                }
+            }
+        }
+        let curryAdd = curry[add]
+        let addTen = curryAdd[ten]
+        let twentyFive = addTen[^15]
+        XCTAssertEqual(twentyFive.!, 25)
     }
 
     static var allTests : [(String, (LMSTests) -> () throws -> Void)] {
