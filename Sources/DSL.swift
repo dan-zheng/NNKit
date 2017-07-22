@@ -837,3 +837,7 @@ public extension Rep {
         )
     }
 }
+
+public func zip<A, B>(_ sequenceA: Rep<[A]>, _ sequenceB: Rep<[B]>) -> Rep<Zip2Sequence<[A], [B]>> {
+    return ZipExpression(sequenceA, sequenceB)
+}

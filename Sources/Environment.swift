@@ -17,7 +17,7 @@
 //  limitations under the License.
 //
 
-/// Source location used to approximate funciton's intentional equivalence
+/// Source location used to approximate function's intentional equivalence
 struct SourceLocation : Hashable {
     var file: StaticString
     var line: UInt
