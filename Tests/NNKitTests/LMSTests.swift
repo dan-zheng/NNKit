@@ -44,7 +44,7 @@ class LMSTests : XCTestCase {
 
     func testIndirectRecursion() {
         func fac(_ n: Rep<Int>) -> Rep<Int> {
-            return `if`(n == 0, then: ^1, else: n * lambda(fac)[n-1])
+            return .if(n == 0, then: ^1, else: n * lambda(fac)[n-1])
         }
         let result = fac(^5).!
         XCTAssertEqual(result, 120)
@@ -118,7 +118,7 @@ class LMSTests : XCTestCase {
         /// Y combinator
         let fac: Rep<(Int) -> Int> = fix { f in
             lambda { (n: Rep<Int>) in
-                `if`(n == 0, then: ^1, else: n * f[n - 1])
+                .if(n == 0, then: ^1, else: n * f[n - 1])
             }
         }
         XCTAssertEqual(fac[^5].!, 120)
