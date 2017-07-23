@@ -121,7 +121,17 @@ class LMSTests : XCTestCase {
                 .if(n == 0, then: ^1, else: n * f[n - 1])
             }
         }
+        let fib: Rep<(Int) -> Int> = fix { f in
+            lambda { (n: Rep<Int>) in
+                .if(n == 0,
+                    then: ^0,
+                    else: .if(n == 1,
+                              then: ^1,
+                              else: f[n-1] + f[n-2]))
+            }
+        }
         XCTAssertEqual(fac[^5].!, 120)
+        XCTAssertEqual(fib[^5].!, 5)
     }
 
     static var allTests : [(String, (LMSTests) -> () throws -> Void)] {

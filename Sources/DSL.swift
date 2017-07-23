@@ -799,11 +799,10 @@ public extension Rep {
     }
 
     func map<Element, MapResult>(
-        file: StaticString = #file, line: UInt = #line, column: UInt = #column,
         _ fn: @escaping (Rep<Element>) -> Rep<MapResult>) -> Rep<[MapResult]>
         where Result == [Element]
     {
-        return map(lambda(file: file, line: line, column: column, fn))
+        return map(lambda(fn))
     }
 
     func reduce<A, R>(
@@ -815,12 +814,10 @@ public extension Rep {
     }
 
     func reduce<A, R>(
-        file: StaticString = #file, line: UInt = #line, column: UInt = #column,
         _ initial: Rep<R>,
         _ combiner: @escaping (Rep<R>, Rep<A>) -> Rep<R>
         ) -> Rep<R> where Result == [A] {
-        return reduce(initial,
-                      lambda(file: file, line: line, column: column, combiner))
+        return reduce(initial, lambda(combiner))
     }
 
     /// - Todo: To be removed when conditional conformance is supported. That is,
@@ -835,14 +832,10 @@ public extension Rep {
     /// - Todo: To be removed when conditional conformance is supported. That is,
     /// when we can declare `extension Rep : ExpressibleByXXX when Result == XXX`
     func reduce<A, R : Stageable>(
-        file: StaticString = #file, line: UInt = #line, column: UInt = #column,
         _ initial: R,
         _ combiner: @escaping (Rep<R>, Rep<A>) -> Rep<R>
         ) -> Rep<R> where Result == [A] {
-        return reduce(
-            file: file, line: line, column: column,
-            ^initial, combiner
-        )
+        return reduce(^initial, combiner)
     }
 
     func filter<Element>(_ filter: Rep<(Element) -> Bool>) -> Rep<[Element]>
@@ -851,12 +844,11 @@ public extension Rep {
     }
 
     func filter<Element>(
-        file: StaticString = #file, line: UInt = #line, column: UInt = #column,
         _ filter: @escaping (Rep<Element>) -> Rep<Bool>) -> Rep<[Element]>
         where Result == [Element]
     {
         return FilterExpression(
-            filter: lambda(file: file, line: line, column: column, filter),
+            filter: lambda(filter),
             array: self
         )
     }
@@ -875,12 +867,11 @@ public func zip<A, B, R>(
 }
 
 public func zip<A, B, R>(
-    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
     _ array1: Rep<[A]>, _ array2: Rep<[B]>,
     with combiner: @escaping (Rep<A>, Rep<B>) -> Rep<R>
     ) -> Rep<[R]> {
     return zip(array1, array2,
-               with: lambda(file: file, line: line, column: column, combiner))
+               with: lambda(combiner))
 }
 
 /// Y combinator
