@@ -728,6 +728,14 @@ public func `if`<Result>(
     return IfExpression(condition: condition, then: then, else: `else`)
 }
 
+public extension Rep {
+    static func `if`<Result>(
+        _ condition: Rep<Bool>, then: Rep<Result>, else: Rep<Result>
+        ) -> Rep<Result> {
+        return IfExpression(condition: condition, then: then, else: `else`)
+    }
+}
+
 public func cond<Result>(
     _ cond1: Rep<Bool>, _ then1: Rep<Result>, `else`: Rep<Result>
     ) -> Rep<Result> {
