@@ -478,26 +478,32 @@ public prefix func *<A, B, C, D, E, F, G, H, I, J>(
 // MARK: - Lambda abstraction
 
 public func lambda<Result>(
-    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    file: StaticString = #file, function: StaticString = #function,
+    line: UInt = #line, column: UInt = #column,
     _ closure: @escaping () -> Rep<Result>
     ) -> Rep<() -> Result> {
-    let loc = SourceLocation(file: file, line: line, column: column)
+    let loc = SourceLocation(file: file, function: function,
+                             line: line, column: column)
     return LambdaExpression(metaClosure: { _ in closure() }, location: loc)
 }
 
 public func lambda<Argument, Result>(
-    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    file: StaticString = #file, function: StaticString = #function,
+    line: UInt = #line, column: UInt = #column,
     _ closure: @escaping (Rep<Argument>) -> Rep<Result>
     ) -> Rep<(Argument) -> Result> {
-    let loc = SourceLocation(file: file, line: line, column: column)
+    let loc = SourceLocation(file: file, function: function,
+                             line: line, column: column)
     return LambdaExpression(metaClosure: closure, location: loc)
 }
 
 public func lambda<A, B, Result>(
-    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    file: StaticString = #file, function: StaticString = #function,
+    line: UInt = #line, column: UInt = #column,
     _ closure: @escaping (Rep<A>, Rep<B>) -> Rep<Result>
     ) -> Rep<(A, B) -> Result> {
-    let loc = SourceLocation(file: file, line: line, column: column)
+    let loc = SourceLocation(file: file, function: function,
+                             line: line, column: column)
     func f(_ x: Rep<(A, B)>) -> Rep<Result> {
         let (a, b) = *x
         return closure(a, b)
@@ -506,10 +512,12 @@ public func lambda<A, B, Result>(
 }
 
 public func lambda<A, B, C, Result>(
-    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    file: StaticString = #file, function: StaticString = #function,
+    line: UInt = #line, column: UInt = #column,
     _ closure: @escaping (Rep<A>, Rep<B>, Rep<C>) -> Rep<Result>
     ) -> Rep<(A, (B, C)) -> Result> {
-    let loc = SourceLocation(file: file, line: line, column: column)
+    let loc = SourceLocation(file: file, function: function,
+                             line: line, column: column)
     func f(_ x: Rep<(A, (B, C))>) -> Rep<Result> {
         let (a, b, c) = *x
         return closure(a, b, c)
@@ -518,10 +526,12 @@ public func lambda<A, B, C, Result>(
 }
 
 public func lambda<A, B, C, D, Result>(
-    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    file: StaticString = #file, function: StaticString = #function,
+    line: UInt = #line, column: UInt = #column,
     _ closure: @escaping (Rep<A>, Rep<B>, Rep<C>, Rep<D>) -> Rep<Result>
     ) -> Rep<(A, (B, (C, D))) -> Result> {
-    let loc = SourceLocation(file: file, line: line, column: column)
+    let loc = SourceLocation(file: file, function: function,
+                             line: line, column: column)
     func f(_ x: Rep<(A, (B, (C, D)))>) -> Rep<Result> {
         let (a, b, c, d) = *x
         return closure(a, b, c, d)
@@ -530,10 +540,12 @@ public func lambda<A, B, C, D, Result>(
 }
 
 public func lambda<A, B, C, D, E, Result>(
-    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    file: StaticString = #file, function: StaticString = #function,
+    line: UInt = #line, column: UInt = #column,
     _ closure: @escaping (Rep<A>, Rep<B>, Rep<C>, Rep<D>, Rep<E>) -> Rep<Result>
     ) -> Rep<(A, (B, (C, (D, E)))) -> Result> {
-    let loc = SourceLocation(file: file, line: line, column: column)
+    let loc = SourceLocation(file: file, function: function,
+                             line: line, column: column)
     func f(_ x: Rep<(A, (B, (C, (D, E))))>) -> Rep<Result> {
         let (a, b, c, d, e) = *x
         return closure(a, b, c, d, e)
@@ -542,11 +554,13 @@ public func lambda<A, B, C, D, E, Result>(
 }
 
 public func lambda<A, B, C, D, E, F, Result>(
-    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    file: StaticString = #file, function: StaticString = #function,
+    line: UInt = #line, column: UInt = #column,
     _ closure: @escaping (Rep<A>, Rep<B>, Rep<C>,
                           Rep<D>, Rep<E>, Rep<F>) -> Rep<Result>
     ) -> Rep<(A, (B, (C, (D, (E, F))))) -> Result> {
-    let loc = SourceLocation(file: file, line: line, column: column)
+    let loc = SourceLocation(file: file, function: function,
+                             line: line, column: column)
     func f(_ x: Rep<(A, (B, (C, (D, (E, F)))))>) -> Rep<Result> {
         let (a, b, c, d, e, f) = *x
         return closure(a, b, c, d, e, f)
@@ -555,11 +569,13 @@ public func lambda<A, B, C, D, E, F, Result>(
 }
 
 public func lambda<A, B, C, D, E, F, G, Result>(
-    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    file: StaticString = #file, function: StaticString = #function,
+    line: UInt = #line, column: UInt = #column,
     _ closure: @escaping (Rep<A>, Rep<B>, Rep<C>, Rep<D>,
                           Rep<E>, Rep<F>, Rep<G>) -> Rep<Result>
     ) -> Rep<(A, (B, (C, (D, (E, (F, G)))))) -> Result> {
-    let loc = SourceLocation(file: file, line: line, column: column)
+    let loc = SourceLocation(file: file, function: function,
+                             line: line, column: column)
     func f(_ x: Rep<(A, (B, (C, (D, (E, (F, G))))))>) -> Rep<Result> {
         let (a, b, c, d, e, f, g) = *x
         return closure(a, b, c, d, e, f, g)
@@ -568,11 +584,13 @@ public func lambda<A, B, C, D, E, F, G, Result>(
 }
 
 public func lambda<A, B, C, D, E, F, G, H, Result>(
-    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    file: StaticString = #file, function: StaticString = #function,
+    line: UInt = #line, column: UInt = #column,
     _ closure: @escaping (Rep<A>, Rep<B>, Rep<C>, Rep<D>,
                           Rep<E>, Rep<F>, Rep<G>, Rep<H>) -> Rep<Result>
     ) -> Rep<(A, (B, (C, (D, (E, (F, (G, H))))))) -> Result> {
-    let loc = SourceLocation(file: file, line: line, column: column)
+    let loc = SourceLocation(file: file, function: function,
+                             line: line, column: column)
     func f(_ x: Rep<(A, (B, (C, (D, (E, (F, (G, H)))))))>) -> Rep<Result> {
         let (a, b, c, d, e, f, g, h) = *x
         return closure(a, b, c, d, e, f, g, h)
@@ -581,11 +599,13 @@ public func lambda<A, B, C, D, E, F, G, H, Result>(
 }
 
 public func lambda<A, B, C, D, E, F, G, H, I, Result>(
-    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    file: StaticString = #file, function: StaticString = #function,
+    line: UInt = #line, column: UInt = #column,
     _ closure: @escaping (Rep<A>, Rep<B>, Rep<C>, Rep<D>, Rep<E>, Rep<F>,
                           Rep<G>, Rep<H>, Rep<I>) -> Rep<Result>
     ) -> Rep<(A, (B, (C, (D, (E, (F, (G, (H, I)))))))) -> Result> {
-    let loc = SourceLocation(file: file, line: line, column: column)
+    let loc = SourceLocation(file: file, function: function,
+                             line: line, column: column)
     func f(_ x: Rep<(A, (B, (C, (D, (E, (F, (G, (H, I))))))))>) -> Rep<Result> {
         let (a, b, c, d, e, f, g, h, i) = *x
         return closure(a, b, c, d, e, f, g, h, i)
@@ -596,11 +616,13 @@ public func lambda<A, B, C, D, E, F, G, H, I, Result>(
 // MARK: - Function application
 
 public func lambda<A, B, C, D, E, F, G, H, I, J, Result>(
-    file: StaticString = #file, line: UInt = #line, column: UInt = #column,
+    file: StaticString = #file, function: StaticString = #function,
+    line: UInt = #line, column: UInt = #column,
     _ closure: @escaping (Rep<A>, Rep<B>, Rep<C>, Rep<D>, Rep<E>, Rep<F>,
                           Rep<G>, Rep<H>, Rep<I>, Rep<J>) -> Rep<Result>
     ) -> Rep<(A, (B, (C, (D, (E, (F, (G, (H, (I, J))))))))) -> Result> {
-    let loc = SourceLocation(file: file, line: line, column: column)
+    let loc = SourceLocation(file: file, function: function,
+                             line: line, column: column)
     func f(_ x: Rep<(A, (B, (C, (D, (E, (F, (G, (H, (I, J)))))))))>
         ) -> Rep<Result> {
         let (a, b, c, d, e, f, g, h, i, j) = *x

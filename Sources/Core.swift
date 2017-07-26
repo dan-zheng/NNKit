@@ -244,22 +244,7 @@ final class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return
     let metaClosure: (Expression<Argument>) -> Expression<Return>
     let location: SourceLocation
 
-    override lazy var shouldInvalidateCache: Bool = self.closure.hasFreeVariables
-
-    lazy var closure: Closure<Return> = {
-        if let closure: Closure<Return> = Environment.closure(at: self.location) {
-            return closure
-        }
-        let sym = Environment.makeSymbol()
-        let symExp = SymbolExpression<Argument>(value: sym)
-        let body = self.metaClosure(symExp)
-        /// DFS in body and see if there's any SymbolExp whose
-        /// ID does not equal `sym`. If any, set `shouldInvalidateCache`
-        /// to `true`
-        let closure = Closure(formal: sym, body: body)
-        Environment.registerClosure(closure, at: self.location)
-        return closure
-    }()
+    override lazy var shouldInvalidateCache: Bool = true
 
     init(metaClosure: @escaping (Expression<Argument>) -> Expression<Return>,
          location: SourceLocation) {
@@ -272,10 +257,18 @@ final class LambdaExpression<Argument, Return> : Expression<(Argument) -> Return
     }
 
     fileprivate override func evaluated(in env: Environment) -> (Argument) -> Return {
+        let closure: Closure<Return> = Environment.closure(at: self.location) ?? {
+            let sym = Environment.makeSymbol()
+            let symExp = SymbolExpression<Argument>(value: sym)
+            let body = self.metaClosure(symExp)
+            let closure = Closure(formal: sym, body: body, environment: env)
+            Environment.registerClosure(closure, at: self.location)
+            return closure
+        }()
         return { arg in
             let newEnv = Environment(parent: env)
-            newEnv.insert(arg, for: self.closure.formal)
-            return self.closure.body.result(in: newEnv)
+            newEnv.insert(arg, for: closure.formal)
+            return closure.body.result(in: newEnv)
         }
     }
 }

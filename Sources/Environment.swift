@@ -20,17 +20,20 @@
 /// Source location used to approximate function's intentional equivalence
 struct SourceLocation : Hashable {
     var file: StaticString
+    var function: StaticString
     var line: UInt
     var column: UInt
 
     static func ==(lhs: SourceLocation, rhs: SourceLocation) -> Bool {
         return lhs.file.utf8Start == rhs.file.utf8Start
+            && lhs.function.utf8Start == rhs.function.utf8Start
             && lhs.line == rhs.line
             && lhs.column == rhs.column
     }
 
     var hashValue: Int {
-        return file.utf8Start.hashValue ^ line.hashValue ^ column.hashValue
+        return file.utf8Start.hashValue ^ function.utf8Start.hashValue
+            ^ line.hashValue ^ column.hashValue
     }
 }
 
@@ -38,6 +41,7 @@ struct SourceLocation : Hashable {
 struct Closure<Return> {
     var formal: UInt
     var body: Expression<Return>
+    var environment: Environment
 }
 
 class Environment {

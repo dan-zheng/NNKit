@@ -53,11 +53,8 @@ class LMSTests : XCTestCase {
     func testResultCaching() {
         let sumTimes10: Rep<(Int, Int) -> (Int) -> Int> =
             lambda { x, y in lambda { z in (x + y + z) * ^10 } }
-        XCTAssertFalse(sumTimes10.shouldInvalidateCache)
         let expr = sumTimes10 as! LambdaExpression<(Int, Int), (Int) -> Int>
-        XCTAssertTrue(expr.closure.body.shouldInvalidateCache)
         let innerLambda = sumTimes10[^3, ^4]
-        XCTAssertFalse(innerLambda.shouldInvalidateCache)
         let prod = innerLambda[^5]
         XCTAssertEqual(prod.!, 120)
         XCTAssertEqual(prod.!, 120)
@@ -118,12 +115,14 @@ class LMSTests : XCTestCase {
         /// Y combinator
         let fac: Rep<(Int) -> Int> = fix { f in
             lambda { (n: Rep<Int>) in
-                .if(n == 0, then: ^1, else: n * f[n - 1])
+                print("=== Instantiating `fac`!!!!!!!!")
+                return .if(n == 0, then: ^1, else: n * f[n - 1])
             }
         }
         let fib: Rep<(Int) -> Int> = fix { f in
             lambda { (n: Rep<Int>) in
-                .if(n == 0,
+                print("=== Instantiating `fib`!!!!!!!!")
+                return .if(n == 0,
                     then: ^0,
                     else: .if(n == 1,
                               then: ^1,
