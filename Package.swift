@@ -1,3 +1,4 @@
+// swift-tools-version:4.0
 //
 //  Package.swift
 //  NNKit
@@ -20,5 +21,16 @@
 import PackageDescription
 
 let package = Package(
-    name: "NNKit"
+    name: "NNKit",
+    products: [
+        .library(name: "NNKit", type: .static, targets: ["NNKit"])
+    ],
+    dependencies: [
+        .package(url: "https://github.com/rxwei/DLVM", from: "0.1.3"),
+    ],
+    targets: [
+        .target(name: "NNKit", dependencies: ["DLVM"]),
+        .testTarget(name: "NNKitTests", dependencies: ["NNKit"])
+    ],
+    swiftLanguageVersions: [4]
 )
